@@ -30,7 +30,7 @@ int main(void)
 
 	INTC_Init();				// 中断设置及相应中断服务程序
 
-	SPI1_Init();					// SPI0初始化
+	SPI1_Init();				// SPI1初始化
 
 	eHRPWM0();					// 输出PWM波(CONVST_x signal)
 
@@ -39,11 +39,23 @@ int main(void)
 	_enable_interrupts();		// 使能全局中断
 
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT0 = AD_Parameter0;
+    SPI1_SPIDAT1 = AD_Parameter0;
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT0 = AD_Parameter1;
+    SPI1_SPIDAT1 = AD_Parameter1;
 
-	while(1){}
+	while(1)
+	{
+	    while(SPI1_SPIBUF & 0x80000000);
+	    sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
+	    //在仿真模式下,读取SPIEMU寄存器不会清零RXINTFLG标志
+	    //实际运行使用SPI0_SPIBUF
+
+	    if(data_count >  899)
+	    {
+	        //SW_BREAKPOINT
+	        data_count = 0;
+	    }
+	}
 
 	//_disable_interrupts();
 }

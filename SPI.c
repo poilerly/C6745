@@ -35,7 +35,7 @@ void SPI1_Init(void)
 
 	/* 5.Chose the SPI data format register 0 (SPIFMT0) */
 	spidat1 = 0
-			| (1 << 28)		//The chip select signal is held active at the end of
+			| (0 << 28)		//The chip select signal is held active at the end of
 			                //a transfer until a control field with new data and
 							//control information is loaded into SPIDAT1.
 			| (0 << 26)		//No delay will be inserted.
@@ -50,16 +50,18 @@ void SPI1_Init(void)
 	 * polarity and other format options using SPIFMTn selected in step 5.
 	 */
 	SPI1_SPIFMT0 = 0
-			| (0 << 24)		//Delay in between transmissions
+
+
+	        | (0 << 24)		//Delay in between transmissions
 			| (0 << 23)		//Parity polarity
 			| (0 << 22)		//Parity disable
 			| (0 << 21)		//The master not waits for SPIx_ENA signal from slave
 			| (0 << 20)		//Most significant bit is shifted out first
 			| (1 << 18)		//No C2TDELAY or T2CDELAY is inserted in the chip select timings.
-			| (0 << 17)		//SPI clock signal low-inactive
-			| (0 << 16)		//SPI clock signal not delay the data stream
+			| (1 << 17)		//SPI clock signal polarity   正是更改了这两个地方所以有数据
+			| (1 << 16)		//SPI clock signal phase
 			| (5 <<  8)		//SPI clock frequency = SPI module clock/(PRESCALE + 1) = 180M/6 = 30M
-			| (16 << 0);		//SPI data word length = 16 bit
+			| (16 << 0);	//SPI data word length = 16 bit
 
 	/* 7. If SPI master, then configure the master delay options using the SPI delay
 	 * register (SPIDELAY). In slave mode, SPIDELAY is not relevant.
@@ -79,9 +81,10 @@ void SPI1_Init(void)
 			| (0 << 24)		//SPIx_ENA pin is pulled high when not active
 			| (0 << 16)		//DMA is not used
 			| (0 <<  9)     //No interrupt will be generated upon SPIFLG.TXINTFLG being set to 1
-			| (0 <<  8);	//Receive interrupt will be generated
+			| (1 <<  8);	//Receive interrupt will be generated
 
 	SPI1_SPILVL = 0;
+
 
 	/* 9. Enable the SPI communication by setting the SPIGCR1.ENABLE to 1. */
 	SPI1_SPIGCR1 |= (1 << 24); //Activates SPI

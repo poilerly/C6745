@@ -31,14 +31,15 @@ void INTC_Init(void)
 interrupt void SPI1_INT_isr (void)
 {
 	_disable_interrupts();
-	INTC_EVTCLR1 |= 0x00000020;     // 清除事件37(SPI0_INT)的中断标志位
-	if(SPI1_SPIFLG & 0x00000100)
-		sampledata[data_count++] = (uint16_t)SPI0_SPIBUF;
+	INTC_EVTCLR1 |= 0x000008000;     // 清除事件43(SPI1_INT)的中断标志位
+    while(SPI1_SPIBUF & 0x80000000);
+    sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
 	//在仿真模式下,读取SPIEMU寄存器不会清零RXINTFLG标志
+	//实际运行使用SPI0_SPIBUF
 
 	if(data_count >  899)
 	{
-		SW_BREAKPOINT
+		SW_BREAKPOINT;
 		data_count = 0;
 	}
 	_enable_interrupts();
@@ -52,9 +53,9 @@ interrupt void GPIO_B3INT_isr (void)
 	INTC_EVTCLR1 |= 0x00100000; // 事件52(GPIO_B3INT)中断标志位清除
 
 	while(!(SPI1_SPIFLG & 0x00000200));
-	SPI1_SPIDAT0 = AD_Parameter0;
+	SPI1_SPIDAT1 = AD_Parameter0;
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT0 = AD_Parameter1;
+    SPI1_SPIDAT1 = AD_Parameter1;
 
 	GPIO_BINTEN |= 0x00000008;  // 设置Bank3中断使能
 	_enable_interrupts();

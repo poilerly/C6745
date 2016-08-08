@@ -49,10 +49,7 @@ void GPIO_ADS8556_Release(void);
 void GPIO_ADS8556_Interrupt(void);
 
 void SPI1_Init();
-void McASP0_Init(void);
-
 void eHRPWM0(void);
-
 
 void delay(uint32_t x);
 

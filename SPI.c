@@ -50,8 +50,6 @@ void SPI1_Init(void)
 	 * polarity and other format options using SPIFMTn selected in step 5.
 	 */
 	SPI1_SPIFMT0 = 0
-
-
 	        | (0 << 24)		//Delay in between transmissions
 			| (0 << 23)		//Parity polarity
 			| (0 << 22)		//Parity disable
@@ -74,6 +72,7 @@ void SPI1_Init(void)
 
 	SPI1_SPIDEF = 0
 	        | (1 <<  0);    //SPIx_SCS[n] pin is driven high
+
 	/* 8. Select the error interrupt notifications by configuring the SPI interrupt
 	 * register (SPIINT0) and the SPIinterrupt level register (SPILVL).
 	 */
@@ -81,9 +80,10 @@ void SPI1_Init(void)
 			| (0 << 24)		//SPIx_ENA pin is pulled high when not active
 			| (0 << 16)		//DMA is not used
 			| (0 <<  9)     //No interrupt will be generated upon SPIFLG.TXINTFLG being set to 1
-			| (1 <<  8);	//Receive interrupt will be generated
+			| (1 <<  8);	//使能接收中断
 
-	SPI1_SPILVL = 0;
+	SPI1_SPILVL = 0
+	        | (1 <<  8);    //接收中断映射到中断队列INT1
 
 
 	/* 9. Enable the SPI communication by setting the SPIGCR1.ENABLE to 1. */

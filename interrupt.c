@@ -31,15 +31,15 @@ void INTC_Init(void)
 interrupt void SPI1_INT_isr (void)
 {
 	_disable_interrupts();
-	INTC_EVTCLR1 |= 0x000008000;     // 清除事件43(SPI1_INT)的中断标志位
-    while(SPI1_SPIBUF & 0x80000000);
-    sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
-	//在仿真模式下,读取SPIEMU寄存器不会清零RXINTFLG标志
-	//实际运行使用SPI0_SPIBUF
+	INTC_EVTCLR1 |= 0x00000800;     // 清除事件43(SPI1_INT)的中断标志位
+    if(SPI1_SPIFLG & (1 << 8))
+        sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
+	//在仿真模式下,读取SPI1_SPIEMU寄存器不会清零RXINTFLG标志
+	//实际运行使用SPI1_SPIBUF
 
 	if(data_count >  899)
 	{
-		SW_BREAKPOINT;
+		//SW_BREAKPOINT;
 		data_count = 0;
 	}
 	_enable_interrupts();

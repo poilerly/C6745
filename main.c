@@ -43,19 +43,7 @@ int main(void)
     while(!(SPI1_SPIFLG & 0x00000200));
     SPI1_SPIDAT1 = AD_Parameter1;
 
-	while(1)
-	{
-	    while(SPI1_SPIBUF & 0x80000000);
-	    sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
-	    //在仿真模式下,读取SPIEMU寄存器不会清零RXINTFLG标志
-	    //实际运行使用SPI0_SPIBUF
-
-	    if(data_count >  899)
-	    {
-	        //SW_BREAKPOINT
-	        data_count = 0;
-	    }
-	}
+	while(1){}
 
 	//_disable_interrupts();
 }

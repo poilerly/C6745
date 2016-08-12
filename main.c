@@ -9,8 +9,9 @@
 #pragma DATA_SECTION (sampledata,".Daydream")
 uint16_t sampledata[6144];				// 采集1024点,6个通道,每个通道16位
 
-uint16_t AD_Parameter0 = 0x0BFF;		//ADS8556 Control Register setting 0
-uint16_t AD_Parameter1 = 0xFC05;        //ADS8556 Control Register setting 1
+uint16_t AD_ParameterL = 0xFC05;        //ADS8556 Control Register setting high
+//uint16_t AD_ParameterL = 0x0BFF;		//ADS8556 Control Register setting low
+uint16_t AD_ParameterH = 0x0BFF;        //ADS8556 Control Register setting low
 uint32_t data_count=0;
 
 int main(void)
@@ -34,16 +35,34 @@ int main(void)
 
 	eHRPWM0();					// 输出PWM波(CONVST_x signal)
 
+    _enable_interrupts();       // 使能全局中断
+
 	GPIO_ADS8556_Release();	// ADS8556脱离复位
 
-	_enable_interrupts();		// 使能全局中断
+//	_enable_interrupts();		// 使能全局中断
 
+	while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_Parameter0;
+    SPI1_SPIDAT1 = AD_ParameterL;
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_Parameter1;
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
 
-	while(1){}
+	while(1){
+	    if(SPI1_SPIFLG & (1 << 8))
+	        sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
+	    if(data_count >= 899)
+	    {
+	        //SW_BREAKPOINT
+	        data_count = 0;
+	    }
+	}
 
 	//_disable_interrupts();
 }

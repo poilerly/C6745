@@ -8,8 +8,8 @@
 #include "main.h"
 
 extern uint16_t sampledata[6144];
-extern uint16_t AD_Parameter0;
-extern uint16_t AD_Parameter1;
+extern uint16_t AD_ParameterH;
+extern uint16_t AD_ParameterL;
 extern uint32_t data_count;
 
 void INTC_Init(void)
@@ -24,7 +24,7 @@ void INTC_Init(void)
 	ICR = 0xFFF0;
 
 	// Enable NMI, INT4-INT5 interrupts
-	IER = (1 << 1) | (1 << 4) | (1 << 5);
+	IER = (1 << 1) | (1 << 4) | (0 << 5);
 }
 
 
@@ -53,9 +53,17 @@ interrupt void GPIO_B3INT_isr (void)
 	INTC_EVTCLR1 |= 0x00100000; // 事件52(GPIO_B3INT)中断标志位清除
 
 	while(!(SPI1_SPIFLG & 0x00000200));
-	SPI1_SPIDAT1 = AD_Parameter0;
+	SPI1_SPIDAT1 = AD_ParameterH;
     while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_Parameter1;
+    SPI1_SPIDAT1 = AD_ParameterL;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
 
 	GPIO_BINTEN |= 0x00000008;  // 设置Bank3中断使能
 	_enable_interrupts();

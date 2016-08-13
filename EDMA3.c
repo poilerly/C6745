@@ -27,15 +27,15 @@ void PaRAM_Set23_Transmit(void)
     EDMA3CC_PARAMSET->PaRAMSet[23].OPT = (1 << 20) | (1 << 8) | ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[23].SRC = (uint32_t)&AD_Parameter;
-    EDMA3CC_PARAMSET->PaRAMSet[23].DST = (uint32_t)&SPI1_SPIDAT1;
+    EDMA3CC_PARAMSET->PaRAMSet[23].SRC = (uint16_t)AD_Parameter;
+    EDMA3CC_PARAMSET->PaRAMSet[23].DST = (uint16_t)SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[23].BCNT_ACNT = (1 << 16) | 12;
+    EDMA3CC_PARAMSET->PaRAMSet[23].BCNT_ACNT = (1024 << 16) | 12;
     EDMA3CC_PARAMSET->PaRAMSet[23].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[23].DSTBIDX_SRCBIDX = (0 << 16) | 0;
+    EDMA3CC_PARAMSET->PaRAMSet[23].DSTBIDX_SRCBIDX = (12 << 16) | 0;
 
     // Set EDMA Event PaRAM SRC/DST CIDX
     EDMA3CC_PARAMSET->PaRAMSet[23].DSTCIDX_SRCCIDX = (0 << 16) | 0;
@@ -55,18 +55,18 @@ void PaRAM_Set123_Transmit_23Link(void)
     EDMA3CC_PARAMSET->PaRAMSet[123].OPT = (1 << 20)  | (1 << 8) | ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[123].SRC = (uint32_t)&AD_Parameter;
-    EDMA3CC_PARAMSET->PaRAMSet[123].DST = (uint32_t)&SPI1_SPIDAT1;
+    EDMA3CC_PARAMSET->PaRAMSet[123].SRC = (uint16_t)AD_Parameter;
+    EDMA3CC_PARAMSET->PaRAMSet[123].DST = (uint16_t)SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[123].BCNT_ACNT = (1 << 16) | 12;
+    EDMA3CC_PARAMSET->PaRAMSet[123].BCNT_ACNT = (1024 << 16) | 12;
     EDMA3CC_PARAMSET->PaRAMSet[123].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
     EDMA3CC_PARAMSET->PaRAMSet[123].DSTBIDX_SRCBIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM SRC/DST CIDX
-    EDMA3CC_PARAMSET->PaRAMSet[123].DSTCIDX_SRCCIDX = (0 << 16) | 0;
+    EDMA3CC_PARAMSET->PaRAMSet[123].DSTCIDX_SRCCIDX = (12 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
     EDMA3CC_PARAMSET->PaRAMSet[123].BCNTRLD_LINK = (0 <<16) | 0x4F60;
@@ -83,8 +83,8 @@ void PaRAM_Set18_Receive(void)
     EDMA3CC_PARAMSET->PaRAMSet[1].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[1].SRC = (uint32_t)&SPI1_SPIBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[1].DST = (uint32_t)&sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[1].SRC = (uint32_t)SPI1_SPIBUF;
+    EDMA3CC_PARAMSET->PaRAMSet[1].DST = (uint32_t)sampledata;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
     EDMA3CC_PARAMSET->PaRAMSet[1].BCNT_ACNT = (1024 << 16) | 12;
@@ -111,8 +111,8 @@ void PaRAM_Set127_Receive_18Link(void)
     EDMA3CC_PARAMSET->PaRAMSet[1].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)&McASP0_RBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)&sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)McASP0_RBUF;
+    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)sampledata;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
     EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (1024 << 16) | 12;

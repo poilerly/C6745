@@ -38,15 +38,18 @@ interrupt void EDMA3_CC0_INT1_isr(void)
             if(regIPR & IxBitMask)
             {
                 // Exit Example on Correct Interrupt
-                if(IxCounter == 23)
-                    // Clear Pending Interrupt
-                    EDMA3_ICR = IxBitMask;
-                //printf("\ttransfer succeed...\n");
+                if(23 == IxCounter)
+                {
+                    EDMA3_ICR = IxBitMask;  // Clear Pending Interrupt
+                    printf("\ttransfer succeed...\n");
+                }
+
                 // Exit Example on Correct Interrupt
-                if(IxCounter == 18)
-                    // Clear Pending Interrupt
-                    EDMA3_ICR = IxBitMask;
-                //printf("\treceive succeed...\n");
+                if(18 == IxCounter)
+                {
+                    EDMA3_ICR = IxBitMask;  // Clear Pending Interrupt
+                    printf("\treceive succeed...\n");
+                }
                 break;
             }
         }
@@ -55,6 +58,6 @@ interrupt void EDMA3_CC0_INT1_isr(void)
 
 interrupt void GPIO_B3INT_isr (void)
 {
-    //printf("\tBUSY/INT..\n");
+    printf("\tBUSY/INT..\n");
 }
 

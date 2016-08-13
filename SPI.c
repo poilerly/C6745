@@ -71,7 +71,7 @@ void SPI1_Init(void)
 			| (0 <<  0);	//C2EDELAY Chip-select-active-to-SPIx_ENA-signal-active-time-out.
 
 	SPI1_SPIDEF = 0
-	        | (1 <<  0);    //SPIx_SCS[n] pin is driven high
+	        | (1 <<  0);    //SPIx_SCS[n] pin is driven high when inactive
 
 	/* 8. Select the error interrupt notifications by configuring the SPI interrupt
 	 * register (SPIINT0) and the SPIinterrupt level register (SPILVL).
@@ -80,10 +80,9 @@ void SPI1_Init(void)
 			| (0 << 24)		//SPIx_ENA pin is pulled high when not active
 			| (0 << 16)		//DMA is not used
 			| (0 <<  9)     //No interrupt will be generated upon SPIFLG.TXINTFLG being set to 1
-			| (1 <<  8);	//使能接收中断
+			| (0 <<  8);	//使能接收中断
 
-	SPI1_SPILVL = 0
-	        | (1 <<  8);    //接收中断映射到中断队列INT1
+	SPI1_SPILVL = 0;
 
 
 	/* 9. Enable the SPI communication by setting the SPIGCR1.ENABLE to 1. */
@@ -92,10 +91,12 @@ void SPI1_Init(void)
 	/* 10. Setup and enable the DMA for SPI data handling and then enable the DMA
 	 * servicing for the SPI data requests by setting the SPIINT0.DMAREQEN to 1.
 	 */
-
+	//当发送的数据从TXBUF或直接从SPIDAT0/SPIDAT1拷贝到移位寄存器时,产生发送DMA请求
+	//当接收的数据从RXBUF或直接从移位寄存器拷贝到SPIBUT时,产生接收DMA请求
+	SPI1_SPIINT0 |= (1 << 16);  //使能DMA
 
 	/* 11. Handle SPI data transfer requests using DMA and service any SPI error
 	 * conditions using the interrupt service routine.
 	 */
-
+	EDMA3_SPI1_Init();
 }

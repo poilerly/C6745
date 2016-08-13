@@ -7,15 +7,10 @@
 
 #include "main.h"
 
-extern uint16_t sampledata[6144];
-extern uint16_t AD_ParameterH;
-extern uint16_t AD_ParameterL;
-extern uint32_t data_count;
-
 void INTC_Init(void)
 {
-	// Map SP1_INT/GPIO_B3INT Interrupts to DSP INT5/4
-	INTC_INTMUX1 = (43 << 8) | (52 << 0);
+	// Map EDMA3_CC0_INT1/GPIO_B3INT Interrupts to DSP INT5/4
+	INTC_INTMUX1 = (8 << 8) | (52 << 0);
 
 	// Assign the address of the IST to the IST pointer
 	ISTP = (unsigned int)intcVectorTable;
@@ -28,44 +23,38 @@ void INTC_Init(void)
 }
 
 
-interrupt void SPI1_INT_isr (void)
+interrupt void EDMA3_CC0_INT1_isr(void)
 {
-	_disable_interrupts();
-	INTC_EVTCLR1 |= 0x00000800;     // 清除事件43(SPI1_INT)的中断标志位
-    if(SPI1_SPIFLG & (1 << 8))
-        sampledata[data_count++] = (uint16_t)SPI1_SPIBUF;
-	//在仿真模式下,读取SPI1_SPIEMU寄存器不会清零RXINTFLG标志
-	//实际运行使用SPI1_SPIBUF
+    uint32_t regIPR, IxBitMask, IxCounter;
+    while(EDMA3_IPR != 0)
+    {
+        // Read Interrupt Pending Register
+        regIPR = EDMA3_IPR;
 
-	if(data_count >  899)
-	{
-		//SW_BREAKPOINT;
-		data_count = 0;
-	}
-	_enable_interrupts();
+        // Loop for Set Interrupt Pending Bit
+        for(IxCounter = 0; IxCounter < 32; IxCounter++)
+        {
+            IxBitMask = 1 << IxCounter;
+            if(regIPR & IxBitMask)
+            {
+                // Exit Example on Correct Interrupt
+                if(IxCounter == 23)
+                    // Clear Pending Interrupt
+                    EDMA3_ICR = IxBitMask;
+                //printf("\ttransfer succeed...\n");
+                // Exit Example on Correct Interrupt
+                if(IxCounter == 18)
+                    // Clear Pending Interrupt
+                    EDMA3_ICR = IxBitMask;
+                //printf("\treceive succeed...\n");
+                break;
+            }
+        }
+    }
 }
-
 
 interrupt void GPIO_B3INT_isr (void)
 {
-	_disable_interrupts();
-	GPIO_BINTEN &= ~0x00000008; // Bank3中断使能清除
-	INTC_EVTCLR1 |= 0x00100000; // 事件52(GPIO_B3INT)中断标志位清除
-
-	while(!(SPI1_SPIFLG & 0x00000200));
-	SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
-
-	GPIO_BINTEN |= 0x00000008;  // 设置Bank3中断使能
-	_enable_interrupts();
+    //printf("\tBUSY/INT..\n");
 }
 

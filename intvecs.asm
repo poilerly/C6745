@@ -46,7 +46,7 @@
 ; Global symbols defined here
 	.global _intcVectorTable
 	.global _c_int00
-	.global _SPI1_INT_isr
+	.global _EDMA3_CC0_INT1_isr
 	.global _GPIO_B3INT_isr
 
 ;******************************************************************************
@@ -82,7 +82,7 @@ _vector1:	VEC_ENTRY _vec_dummy			;NMI
 _vector2:	VEC_ENTRY _vec_dummy			;RSVD
 _vector3:	VEC_ENTRY _vec_dummy			;RSVD
 _vector4:	VEC_ENTRY _GPIO_B3INT_isr 		;DSP Maskable INT4 : Mapped to func '_GPIO_B3INT_isr'
-_vector5:	VEC_ENTRY _SPI1_INT_isr			;DSP Maskable INT5 : Mapped to func '_SPI1_INT_isr'
+_vector5:	VEC_ENTRY _EDMA3_CC0_INT1_isr	;DSP Maskable INT5 : Mapped to func '_EDMA3_CC0_INT1_isr'
 _vector6:	VEC_ENTRY _vec_dummy			;DSP Maskable INT6 : Empty
 _vector7:	VEC_ENTRY _vec_dummy			;DSP Maskable INT7 : Empty
 _vector8:	VEC_ENTRY _vec_dummy			;DSP Maskable INT8 : Empty

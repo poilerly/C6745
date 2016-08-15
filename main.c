@@ -25,8 +25,10 @@ int main(void)
 	_enable_interrupts();		// 使能全局中断
 
 	//手动产生事件23:GPIO BANK 3 中断
-    EDMA3_ESR = 0x00800000; //CPU通过写事件置位寄存器(ESR)启动一个EDMA3通道
-    EDMA3_ICR = 0x00800000; //清除挂起的中断(由事件23产生)
+//	EDMA3_ESR = 0x00800000; //CPU通过写事件置位寄存器(ESR)启动一个EDMA3通道
+//    EDMA3_ICR = 0x00800000; //清除挂起的中断(由事件23产生)
+	EDMA3_SHADOW0_ESR = 0x00800000;
+	EDMA3_SHADOW0_ICR = 0x00800000;
 
     while(1){}
 

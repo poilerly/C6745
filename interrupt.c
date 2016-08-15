@@ -7,6 +7,9 @@
 
 #include "main.h"
 
+extern uint16_t AD_ParameterH;
+extern uint16_t AD_ParameterL;
+
 void INTC_Init(void)
 {
 	// Map EDMA3_CC0_INT1/GPIO_B3INT Interrupts to DSP INT5/4
@@ -38,11 +41,11 @@ interrupt void EDMA3_CC0_INT1_isr(void)
             if(regIPR & IxBitMask)
             {
                 // Exit Example on Correct Interrupt
-                if(23 == IxCounter)
-                {
-                    EDMA3_ICR = IxBitMask;  // Clear Pending Interrupt
-                    printf("\ttransfer succeed...\n");
-                }
+//                if(23 == IxCounter)
+//                {
+//                    EDMA3_ICR = IxBitMask;  // Clear Pending Interrupt
+//                    printf("\ttransfer succeed...\n");
+//                }
 
                 // Exit Example on Correct Interrupt
                 if(18 == IxCounter)
@@ -56,8 +59,27 @@ interrupt void EDMA3_CC0_INT1_isr(void)
     }
 }
 
+
 interrupt void GPIO_B3INT_isr (void)
 {
-    printf("\tBUSY/INT..\n");
+    _disable_interrupts();
+    GPIO_BINTEN &= ~0x00000008; // Bank3中断使能清除
+    INTC_EVTCLR1 |= 0x00100000; // 事件52(GPIO_B3INT)中断标志位清除
+
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterH;
+    while(!(SPI1_SPIFLG & 0x00000200));
+    SPI1_SPIDAT1 = AD_ParameterL;
+
+    GPIO_BINTEN |= 0x00000008;  // 设置Bank3中断使能
+    _enable_interrupts();
 }
 

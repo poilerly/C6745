@@ -27,8 +27,8 @@ void PaRAM_Set23_Transmit(void)
     EDMA3CC_PARAMSET->PaRAMSet[23].OPT = (1 << 20) | (1 << 8) | ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[23].SRC = (uint16_t)AD_Parameter;
-    EDMA3CC_PARAMSET->PaRAMSet[23].DST = (uint16_t)SPI1_SPIDAT1;
+    EDMA3CC_PARAMSET->PaRAMSet[23].SRC = (uint32_t)&AD_Parameter;
+    EDMA3CC_PARAMSET->PaRAMSet[23].DST = (uint32_t)&SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
     EDMA3CC_PARAMSET->PaRAMSet[23].BCNT_ACNT = (1 << 16) | 12;
@@ -55,8 +55,8 @@ void PaRAM_Set123_Transmit_23Link(void)
     EDMA3CC_PARAMSET->PaRAMSet[123].OPT = (1 << 20)  | (1 << 8) | ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[123].SRC = (uint16_t)AD_Parameter;
-    EDMA3CC_PARAMSET->PaRAMSet[123].DST = (uint16_t)SPI1_SPIDAT1;
+    EDMA3CC_PARAMSET->PaRAMSet[123].SRC = (uint32_t)&AD_Parameter;
+    EDMA3CC_PARAMSET->PaRAMSet[123].DST = (uint32_t)&SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
     EDMA3CC_PARAMSET->PaRAMSet[123].BCNT_ACNT = (1 << 16) | 12;
@@ -76,28 +76,29 @@ void PaRAM_Set123_Transmit_23Link(void)
 void PaRAM_Set18_Receive(void)
 {
     // Reset EDMA2 PaRAM OPT Register
-    EDMA3CC_PARAMSET->PaRAMSet[1].OPT = 0x00000000;
+    EDMA3CC_PARAMSET->PaRAMSet[18].OPT = 0x00000000;
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
     // FIFO的宽度为16-bit(1 << 8),传输完成中断使能(1 << 20),传输结束代码为(23 << 12)
-    EDMA3CC_PARAMSET->PaRAMSet[1].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
+//    EDMA3CC_PARAMSET->PaRAMSet[18].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
+    EDMA3CC_PARAMSET->PaRAMSet[18].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[1].SRC = (uint32_t)SPI1_SPIBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[1].DST = (uint16_t)sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[18].SRC = (uint32_t)&SPI1_SPIBUF;
+    EDMA3CC_PARAMSET->PaRAMSet[18].DST = (uint32_t)&sampledata;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[1].BCNT_ACNT = (1024 << 16) | 12;
-    EDMA3CC_PARAMSET->PaRAMSet[1].Rsvd_CCNT = 1;
+    EDMA3CC_PARAMSET->PaRAMSet[18].BCNT_ACNT = (6144 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[18].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[1].DSTBIDX_SRCBIDX = (12 << 16) | 0;
+    EDMA3CC_PARAMSET->PaRAMSet[18].DSTBIDX_SRCBIDX = (2 << 16) | 0;
 
     // Set EDMA Event PaRAM SRC/DST CIDX
-    EDMA3CC_PARAMSET->PaRAMSet[1].DSTCIDX_SRCCIDX = (0 << 16) | 0;
+    EDMA3CC_PARAMSET->PaRAMSet[18].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[1].BCNTRLD_LINK = (0 <<16) | 0x4FE0;
+    EDMA3CC_PARAMSET->PaRAMSet[18].BCNTRLD_LINK = (0 <<16) | 0x4FE0;
 }
 
 
@@ -108,18 +109,19 @@ void PaRAM_Set127_Receive_18Link(void)
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
     // FIFO的宽度为16-bit(1 << 8),传输完成中断使能(1 << 20),传输结束代码为(23 << 12)
-    EDMA3CC_PARAMSET->PaRAMSet[1].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
+//    EDMA3CC_PARAMSET->PaRAMSet[1].OPT = (1 << 20) | (1 <<8) | ((18 << 12) & 0x0003F000);
+    EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)SPI1_SPIBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint16_t)sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)&SPI1_SPIBUF;
+    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)&sampledata;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (1024 << 16) | 12;
+    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (6144 << 16) | 2;
     EDMA3CC_PARAMSET->PaRAMSet[127].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[127].DSTBIDX_SRCBIDX = (12 << 16) | 0;
+    EDMA3CC_PARAMSET->PaRAMSet[127].DSTBIDX_SRCBIDX = (2 << 16) | 0;
 
     // Set EDMA Event PaRAM SRC/DST CIDX
     EDMA3CC_PARAMSET->PaRAMSet[127].DSTCIDX_SRCCIDX = (0 << 16) | 0;
@@ -164,22 +166,25 @@ void EDMA3_SPI1_Init(void)
     // Event 18 -> SPI1 接收中断
     // Event 23 -> GPIO Bank3 中断
     // Enable Channel 18 & 23 to DSP (Region 1)
-    EDMA3_DRAE1 |= (1 << 18) | (1 << 23);
+    //EDMA3_DRAE1 |= (1 << 18) | (1 << 23);
+    EDMA3_DRAE1 |= (1 << 18);
 
     // Assign Channel 18 to Queue 0
     // Assign Channel 23 to Queue 1
     EDMA3_DMAQNUM2 = 0x10000000;
 
-    PaRAM_Set23_Transmit();
-    PaRAM_Set123_Transmit_23Link();
+    //PaRAM_Set23_Transmit();
+    //PaRAM_Set123_Transmit_23Link();
     PaRAM_Set18_Receive();
     PaRAM_Set127_Receive_18Link();
 
     // Enable Event 18 & Event 23
-    EDMA3_EESR |= (1 << 18) | (1 << 23);
+    //EDMA3_EESR |= (1 << 18) | (1 << 23);
+    EDMA3_EESR |= (1 << 18);
 
     // Enable Interrupt 18 & Interrupt 23 when transfer completion
-    EDMA3_IESR |= (1 << 18) | (1 << 23);
+    //EDMA3_IESR |= (1 << 18) | (1 << 23);
+    EDMA3_IESR |= (1 << 18);
 
     // Initialize sampledata Buffers
     dataPointer = (uint16_t*)sampledata;

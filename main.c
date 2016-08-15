@@ -6,10 +6,10 @@
  */
 #include "main.h"
 
-extern uint16_t sampledata[6144];
-uint16_t data_count = 0;
-uint16_t AD_ParameterH = 0x0BFF;
-uint16_t AD_ParameterL = 0xFC05;
+//extern uint16_t sampledata[6144];
+//uint16_t data_count = 0;
+//uint16_t AD_ParameterH = 0x0BFF;
+//uint16_t AD_ParameterL = 0xFC05;
 
 int main(void)
 {
@@ -29,20 +29,8 @@ int main(void)
 
 	_enable_interrupts();		// 使能全局中断
 
-	while(!(SPI1_SPIFLG & 0x00000200));
-	SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
-
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
-
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterH;
-    while(!(SPI1_SPIFLG & 0x00000200));
-    SPI1_SPIDAT1 = AD_ParameterL;
+//	EDMA3_ESR = 0x00800000;     // CPU启动EDMA3 触发事件23
+//	EDMA3_ICR = 0x00800000;
 
     while(1)
     {

@@ -39,7 +39,7 @@ void C6745_Init(void);
 //Interrupt Functions
 extern void intcVectorTable (void);
 interrupt void EDMA3_CC0_INT1_isr (void);
-interrupt void GPIO_B3INT_isr (void);
+//interrupt void GPIO_B3INT_isr (void);
 void INTC_Init(void);
 
 

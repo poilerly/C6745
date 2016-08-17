@@ -25,12 +25,11 @@ int main(void)
 
 	eHRPWM0();					// 输出PWM波(CONVST_x signal)
 
-	GPIO_ADS8556_Release();	// ADS8556脱离复位
+	_enable_interrupts();     // 使能全局中断
 
-	_enable_interrupts();		// 使能全局中断
+	GPIO_ADS8556_Release();   // ADS8556脱离复位
 
-//	EDMA3_ESR = 0x00800000;     // CPU启动EDMA3 触发事件23
-//	EDMA3_ICR = 0x00800000;
+	EDMA3_ESR = (1 << 19);      // CPU启动EDMA3 触发事件23
 
     while(1)
     {

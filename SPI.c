@@ -79,7 +79,7 @@ void SPI1_Init(void)
 	SPI1_SPIINT0 = 0
 			| (0 << 24)		//SPIx_ENA pin is pulled high when not active
 			| (0 << 16)		//DMA is not used
-			| (0 <<  9)     //No interrupt will be generated upon SPIFLG.TXINTFLG being set to 1
+			| (0 <<  9)     //不使能发送中断
 			| (0 <<  8);	//不使能接收中断
 
 	SPI1_SPILVL = 0;

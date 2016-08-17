@@ -39,7 +39,7 @@ void C6745_Init(void);
 //Interrupt Functions
 extern void intcVectorTable (void);
 interrupt void EDMA3_CC0_INT1_isr (void);
-//interrupt void GPIO_B3INT_isr (void);
+interrupt void GPIO_B3INT_isr (void);
 void INTC_Init(void);
 
 
@@ -53,5 +53,7 @@ void EDMA3_SPI1_Init(void);
 void eHRPWM0(void);
 
 void delay(uint32_t x);
+
+void PaRAM_Set19(void);
 
 #endif /* MCASP_EDMA3_MAIN_H_ */

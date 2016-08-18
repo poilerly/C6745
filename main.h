@@ -37,20 +37,18 @@ void C6745_Init(void);
 
 
 //Interrupt Functions
+void INTC_Init(void);
 extern void intcVectorTable (void);
 interrupt void EDMA3_CC0_INT1_isr (void);
-//interrupt void GPIO_B3INT_isr (void);
-void INTC_Init(void);
 
 
 //User Functions
 void GPIO_ADS8556_Reset(void);
 void GPIO_ADS8556_Release(void);
 void GPIO_ADS8556_Interrupt(void);
-
+void eHRPWM0(void);
 void SPI1_Init(void);
 void EDMA3_SPI1_Init(void);
-void eHRPWM0(void);
 
 void delay(uint32_t x);
 

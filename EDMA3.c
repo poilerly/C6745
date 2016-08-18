@@ -108,7 +108,6 @@ void PaRAM_Set19_Transmit(void)
     EDMA3CC_PARAMSET->PaRAMSet[19].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-//    EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 <<16) | 0x4F80;
     EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 << 16) | 0x4FA0;
 }
 
@@ -138,7 +137,6 @@ void PaRAM_Set124_Transmit_19Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[124].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-//    EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 <<16) | 0x4F80;
     EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 << 16) | 0x4FA0;
 }
 
@@ -266,7 +264,7 @@ void EDMA3_SPI1_Init(void)
     EDMA3_Reset();
 
     // Enable Channel 18 & 19 & 23 to DSP (Region 1)
-    EDMA3_DRAE1 |= (1 << 18) | (1 << 19) | (1 << 23);
+    EDMA3_DRAE1 = (1 << 18) | (1 << 19) | (1 << 23);
 
     // Assign Channel 18 to Queue 0, Assign Channel 19 & 23 to Queue 1
     EDMA3_DMAQNUM2 = 0x10001000;
@@ -282,13 +280,14 @@ void EDMA3_SPI1_Init(void)
     PaRAM_Set127_Receive_18Linking();
 
     // Enable Event 18 & 19 & 23
-    EDMA3_EESR |= (1 << 18) | (1 << 19) | (1 << 23);
+    EDMA3_EESR = (1 << 18) | (1 << 19) | (1 << 23);
 
     // Enable Interrupt 18 when transfer completion
-    EDMA3_IESR |= (1 << 18);
+    EDMA3_IESR = (1 << 18);
 
     // Initialize sampledata Buffers
     dataPointer = (uint16_t*)sampledata;
     for(i = 0; i < (1024 * 6); i++)
         *dataPointer++ = 1;
 }
+

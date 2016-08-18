@@ -11,7 +11,7 @@
 uint16_t sampledata[6144];  // 采集1024点,6个通道,每个通道16位
 #pragma DATA_SECTION (AD_Parameter,".Daydream")
 uint16_t AD_Parameter[6] = {0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05};
-uint16_t AD_test;
+uint16_t AD_offset = 0;     // 用于抵消每次发送CR控制字产生的额外一次SPI1发送中断事件
 //uint16_t AD_Parameter[6] = {0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF};
 
 /*
@@ -25,13 +25,8 @@ void PaRAM_Set23_Transmit(void)
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[23].OPT = 0x00000000;
 
-    // Config PaRAM OPT:
-    // 这里使用通道连接,TCCHEN=1,ITCCHEN=0,TCC = 19.当通道23传输完第一个16位时,启动通道19
-    // 但是有个新的想法:GPIO BANK3中断事件发生,传输完第一个16位后,当传输完成会不会自动产生
-    // SPI1发生中断事件,EDMA3会不会接着传输剩下的5个16位呢?可以不用通道连接?
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.
-    // 试试二维数据传输如何?
-    EDMA3CC_PARAMSET->PaRAMSet[23].OPT = ((23 << 12) & 0x0003F000);
+    // Config PaRAM OPT: TCC = 23 传输结束代码为(23 << 12)
+//    EDMA3CC_PARAMSET->PaRAMSet[23].OPT = ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[23].SRC = (uint32_t)&AD_Parameter;
@@ -57,12 +52,8 @@ void PaRAM_Set123_Transmit_23Linking(void)
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[123].OPT = 0x00000000;
 
-    // Config PaRAM OPT:
-    // 这里使用通道连接,TCCHEN=1,ITCCHEN=0,TCC = 19.当通道23传输完第一个16位时,启动通道19
-    // 但是有个新的想法:GPIO BANK3中断事件发生,传输完第一个16位后,当传输完成会不会自动产生
-    // SPI1发生中断事件,EDMA3会不会接着传输剩下的5个16位呢?可以不用通道连接?
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.
-    EDMA3CC_PARAMSET->PaRAMSet[123].OPT = ((23 << 12) & 0x0003F000);
+    // Config PaRAM OPT: TCC = 23 传输结束代码为(23 << 12)
+//    EDMA3CC_PARAMSET->PaRAMSet[123].OPT = ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[123].SRC = (uint32_t)&AD_Parameter;
@@ -88,10 +79,8 @@ void PaRAM_Set19_Transmit(void)
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[19].OPT = 0x00000000;
 
-    // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
-    // 传输完成中断使能(1 << 20),传输结束代码为(19 << 12)
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.但这样的话SRC和BCNT都不会更新了,不对.
-    EDMA3CC_PARAMSET->PaRAMSet[19].OPT = ((19 << 12) & 0x0003F000);
+    // Config PaRAM OPT: TCC = 19 传输结束代码为(19 << 12)
+//    EDMA3CC_PARAMSET->PaRAMSet[19].OPT = ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[19].SRC = (((uint32_t)&AD_Parameter) + 2);
@@ -117,10 +106,8 @@ void PaRAM_Set124_Transmit_19Linking(void)
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[124].OPT = 0x00000000;
 
-    // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
-    // 传输完成中断使能(1 << 20),传输结束代码为(19 << 12)
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.但这样的话SRC和BCNT都不会更新了,不对.
-    EDMA3CC_PARAMSET->PaRAMSet[124].OPT = ((19 << 12) & 0x0003F000);
+    // Config PaRAM OPT: 传输结束代码为(19 << 12)
+//    EDMA3CC_PARAMSET->PaRAMSet[124].OPT = ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[124].SRC = (((uint32_t)&AD_Parameter) + 2);
@@ -146,14 +133,12 @@ void PaRAM_Set125_Transmit_19Linking(void)
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[125].OPT = 0x00000000;
 
-    // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
-    // 传输完成中断使能(1 << 20),传输结束代码为(19 << 12)
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.但这样的话SRC和BCNT都不会更新了,不对.
-    EDMA3CC_PARAMSET->PaRAMSet[125].OPT = ((19 << 12) & 0x0003F000);
+    // Config PaRAM OPT: 传输结束代码为(19 << 12)
+//    EDMA3CC_PARAMSET->PaRAMSet[125].OPT = ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-    EDMA3CC_PARAMSET->PaRAMSet[125].SRC = (((uint32_t)&AD_Parameter) + 2);
-    EDMA3CC_PARAMSET->PaRAMSet[125].DST = (uint32_t)&AD_test;
+    EDMA3CC_PARAMSET->PaRAMSet[125].SRC = (((uint32_t)&AD_Parameter));
+    EDMA3CC_PARAMSET->PaRAMSet[125].DST = (uint32_t)&AD_offset;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
     EDMA3CC_PARAMSET->PaRAMSet[125].BCNT_ACNT = (1 << 16) | 2;
@@ -176,8 +161,7 @@ void PaRAM_Set18_Receive(void)
     EDMA3CC_PARAMSET->PaRAMSet[18].OPT = 0x00000000;
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
-    // 传输完成中断使能(1 << 20),传输结束代码为(23 << 12)
-    // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.但这样的话SRC和BCNT都不会更新了,不对.
+    // 传输完成中断使能(1 << 20),传输结束代码为(18 << 12)
     EDMA3CC_PARAMSET->PaRAMSet[18].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
@@ -205,7 +189,7 @@ void PaRAM_Set127_Receive_18Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[127].OPT = 0x00000000;
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
-    // 传输完成中断使能(1 << 20),传输结束代码为(23 << 12)
+    // 传输完成中断使能(1 << 20),传输结束代码为(18 << 12)
     EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses

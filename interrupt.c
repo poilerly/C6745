@@ -11,8 +11,8 @@ uint16_t count = 0;
 
 void INTC_Init(void)
 {
-	// Map EDMA3_CC0_INT1 Interrupts to DSP INT5
-    INTC_INTMUX1 = (8 << 8);
+	// Map EDMA3_CC0_INT1 Interrupts to DSP INT4
+    INTC_INTMUX1 = (8 << 0);
 
 	// Assign the address of the IST to the IST pointer
 	ISTP = (unsigned int)intcVectorTable;
@@ -21,35 +21,27 @@ void INTC_Init(void)
 	ICR = 0xFFF0;
 
 	// Enable NMI, INT4 interrupts
-	IER = (1 << 1) | (1 << 5);  // 使能中断EDMA3_CC0_INT1
+	IER = (1 << 1) | (1 << 4);  // 使能中断EDMA3_CC0_INT1
 }
 
 
 interrupt void EDMA3_CC0_INT1_isr(void)
 {
-    uint32_t regIPR, IxBitMask, IxCounter;
+    uint32_t regIPR;
     while(EDMA3_IPR != 0)
     {
-        // Read Interrupt Pending Register
+        // Read EDMA3 Interrupt Pending Register
         regIPR = EDMA3_IPR;
 
-        // Loop for Set Interrupt Pending Bit
-        for(IxCounter = 0; IxCounter < 32; IxCounter++)
+        if(regIPR & (1 << 18))
         {
-            IxBitMask = 1 << IxCounter;
-            if(regIPR & IxBitMask)
+            // Clear the corresponding bit in the Interrupt Pending Interrupt
+            EDMA3_ICR = (1 << 18);  //必须向ICR相应位写入1,来手动清零IPR中相应位
+            count++;
+            if(99 == count)
             {
-                if(18 == IxCounter)
-                {
-                    EDMA3_ICR = IxBitMask;  // Clear Pending Interrupt
-                    count++;
-                    if(count == 100 )
-                    {
-                        SW_BREAKPOINT
-                        count = 0;
-                    }
-                }
-                break;
+                SW_BREAKPOINT
+                count = 0;
             }
         }
     }

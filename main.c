@@ -6,11 +6,6 @@
  */
 #include "main.h"
 
-//extern uint16_t sampledata[6144];
-//uint16_t data_count = 0;
-//uint16_t AD_ParameterH = 0x0BFF;
-//uint16_t AD_ParameterL = 0xFC05;
-
 int main(void)
 {
 	C6745_Init();
@@ -29,7 +24,7 @@ int main(void)
 
 	GPIO_ADS8556_Release();   // ADS8556脱离复位
 
-	EDMA3_ESR = (1 << 19);      // CPU启动EDMA3 触发事件23
+	EDMA3_ESR = (1 << 23);      // 手动触发事件23,CPU启动EDMA3
 
     while(1)
     {

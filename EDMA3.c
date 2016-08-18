@@ -9,7 +9,9 @@
 
 #pragma DATA_SECTION (sampledata,".Daydream")
 uint16_t sampledata[6144];  // 采集1024点,6个通道,每个通道16位
+#pragma DATA_SECTION (AD_Parameter,".Daydream")
 uint16_t AD_Parameter[6] = {0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05};
+uint16_t AD_test;
 //uint16_t AD_Parameter[6] = {0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF};
 
 /*
@@ -29,7 +31,6 @@ void PaRAM_Set23_Transmit(void)
     // SPI1发生中断事件,EDMA3会不会接着传输剩下的5个16位呢?可以不用通道连接?
     // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.
     // 试试二维数据传输如何?
-//    EDMA3CC_PARAMSET->PaRAMSet[23].OPT = (0 << 23) | (1 << 22) | ((19 << 12) & 0x0003F000);
     EDMA3CC_PARAMSET->PaRAMSet[23].OPT = ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
@@ -47,7 +48,7 @@ void PaRAM_Set23_Transmit(void)
     EDMA3CC_PARAMSET->PaRAMSet[23].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[23].BCNTRLD_LINK = (0 <<16) | 0x4F60;
+    EDMA3CC_PARAMSET->PaRAMSet[23].BCNTRLD_LINK = (0 << 16) | 0x4F60;
 }
 
 
@@ -61,7 +62,6 @@ void PaRAM_Set123_Transmit_23Linking(void)
     // 但是有个新的想法:GPIO BANK3中断事件发生,传输完第一个16位后,当传输完成会不会自动产生
     // SPI1发生中断事件,EDMA3会不会接着传输剩下的5个16位呢?可以不用通道连接?
     // OPT.3 STATIC=1时,参数RAM静态,不根据其他值来更新.
-//    EDMA3CC_PARAMSET->PaRAMSet[23].OPT = (0 << 23) | (1 << 22) | ((19 << 12) & 0x0003F000);
     EDMA3CC_PARAMSET->PaRAMSet[123].OPT = ((23 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
@@ -79,11 +79,11 @@ void PaRAM_Set123_Transmit_23Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[123].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[123].BCNTRLD_LINK = (0 <<16) | 0x4F60;
+    EDMA3CC_PARAMSET->PaRAMSet[123].BCNTRLD_LINK = (0 << 16) | 0x4F60;
 }
 
 
-void PaRAM_Set19_Transmit_23chaining(void)
+void PaRAM_Set19_Transmit(void)
 {
     // Reset EDMA2 PaRAM OPT Register
     EDMA3CC_PARAMSET->PaRAMSet[19].OPT = 0x00000000;
@@ -94,23 +94,22 @@ void PaRAM_Set19_Transmit_23chaining(void)
     EDMA3CC_PARAMSET->PaRAMSet[19].OPT = ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-//    EDMA3CC_PARAMSET->PaRAMSet[19].SRC = (((uint32_t)&AD_Parameter) + 2);
-    EDMA3CC_PARAMSET->PaRAMSet[19].SRC = (((uint32_t)&AD_Parameter));
+    EDMA3CC_PARAMSET->PaRAMSet[19].SRC = (((uint32_t)&AD_Parameter) + 2);
     EDMA3CC_PARAMSET->PaRAMSet[19].DST = (uint32_t)&SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[19].BCNT_ACNT = (6 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[19].BCNT_ACNT = (5 << 16) | 2;
     EDMA3CC_PARAMSET->PaRAMSet[19].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[19].DSTBIDX_SRCBIDX = (0 << 16) | 2 << 0;
+    EDMA3CC_PARAMSET->PaRAMSet[19].DSTBIDX_SRCBIDX = (0 << 16) | (2 << 0);
 
     // Set EDMA Event PaRAM SRC/DST CIDX
     EDMA3CC_PARAMSET->PaRAMSet[19].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 <<16) | 0x4F80;
-//    EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 <<16) | 0xFFFF;
+//    EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 <<16) | 0x4F80;
+    EDMA3CC_PARAMSET->PaRAMSet[19].BCNTRLD_LINK = (0 << 16) | 0x4FA0;
 }
 
 
@@ -125,23 +124,22 @@ void PaRAM_Set124_Transmit_19Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[124].OPT = ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
-//    EDMA3CC_PARAMSET->PaRAMSet[124].SRC = (((uint32_t)&AD_Parameter) + 2);
-    EDMA3CC_PARAMSET->PaRAMSet[124].SRC = (((uint32_t)&AD_Parameter));
+    EDMA3CC_PARAMSET->PaRAMSet[124].SRC = (((uint32_t)&AD_Parameter) + 2);
     EDMA3CC_PARAMSET->PaRAMSet[124].DST = (uint32_t)&SPI1_SPIDAT1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[124].BCNT_ACNT = (6 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[124].BCNT_ACNT = (5 << 16) | 2;
     EDMA3CC_PARAMSET->PaRAMSet[124].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[124].DSTBIDX_SRCBIDX = (0 << 16) | 2 << 0;
+    EDMA3CC_PARAMSET->PaRAMSet[124].DSTBIDX_SRCBIDX = (0 << 16) | (2 << 0);
 
     // Set EDMA Event PaRAM SRC/DST CIDX
     EDMA3CC_PARAMSET->PaRAMSet[124].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 <<16) | 0x4F80;
-//    EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 <<16) | 0x4FA0;
+//    EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 <<16) | 0x4F80;
+    EDMA3CC_PARAMSET->PaRAMSet[124].BCNTRLD_LINK = (0 << 16) | 0x4FA0;
 }
 
 
@@ -157,20 +155,20 @@ void PaRAM_Set125_Transmit_19Linking(void)
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[125].SRC = (((uint32_t)&AD_Parameter) + 2);
-    EDMA3CC_PARAMSET->PaRAMSet[125].DST = (uint32_t)&SPI1_SPIDAT1;
+    EDMA3CC_PARAMSET->PaRAMSet[125].DST = (uint32_t)&AD_test;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[125].BCNT_ACNT = (5 << 16) | 2;
-    EDMA3CC_PARAMSET->PaRAMSet[125].Rsvd_CCNT = 0;
+    EDMA3CC_PARAMSET->PaRAMSet[125].BCNT_ACNT = (1 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[125].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
-    EDMA3CC_PARAMSET->PaRAMSet[125].DSTBIDX_SRCBIDX = (0 << 16) | 2 << 0;
+    EDMA3CC_PARAMSET->PaRAMSet[125].DSTBIDX_SRCBIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM SRC/DST CIDX
     EDMA3CC_PARAMSET->PaRAMSet[125].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[125].BCNTRLD_LINK = (0 <<16) | 0x4F80;
+    EDMA3CC_PARAMSET->PaRAMSet[125].BCNTRLD_LINK = (0 << 16) | 0x4F80;
 }
 
 
@@ -199,7 +197,7 @@ void PaRAM_Set18_Receive(void)
     EDMA3CC_PARAMSET->PaRAMSet[18].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[18].BCNTRLD_LINK = (0 <<16) | 0x4FE0;
+    EDMA3CC_PARAMSET->PaRAMSet[18].BCNTRLD_LINK = (0 << 16) | 0x4FE0;
 }
 
 
@@ -227,7 +225,7 @@ void PaRAM_Set127_Receive_18Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[127].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[127].BCNTRLD_LINK = (0 <<16) | 0x4FE0;
+    EDMA3CC_PARAMSET->PaRAMSet[127].BCNTRLD_LINK = (0 << 16) | 0x4FE0;
 }
 
 
@@ -258,34 +256,33 @@ void EDMA3_Reset(void)
 
 void EDMA3_SPI1_Init(void)
 {
+    // Event 18 -> SPI1 接收中断
+    // Event 19 -> SPI1 发送中断
+    // Event 23 -> GPIO Bank3 中断
+
     uint16_t i;
     uint16_t *dataPointer;
 
     EDMA3_Reset();
 
-    // Event 18 -> SPI1 接收中断
-    // Event 19 -> SPI1 发送中断
-    // Event 23 -> GPIO Bank3 中断
     // Enable Channel 18 & 19 & 23 to DSP (Region 1)
     EDMA3_DRAE1 |= (1 << 18) | (1 << 19) | (1 << 23);
-//    EDMA3_DRAE1 |= (1 << 18);
-//    EDMA3_DRAE1 |= (1 << 18) | (1 << 23);
 
     // Assign Channel 18 to Queue 0, Assign Channel 19 & 23 to Queue 1
     EDMA3_DMAQNUM2 = 0x10001000;
 
     PaRAM_Set23_Transmit();
     PaRAM_Set123_Transmit_23Linking();
-    PaRAM_Set19_Transmit_23chaining();
+
+    PaRAM_Set19_Transmit();
     PaRAM_Set124_Transmit_19Linking();
-//    PaRAM_Set125_Transmit_19Linking();
+    PaRAM_Set125_Transmit_19Linking();
+
     PaRAM_Set18_Receive();
     PaRAM_Set127_Receive_18Linking();
 
     // Enable Event 18 & 19 & 23
-//    EDMA3_EESR |= (1 << 18);
-    EDMA3_EESR = (1 << 18) | (1 << 19);
-//    EDMA3_EESR |= (1 << 18) | (1 << 19) | (1 << 23);
+    EDMA3_EESR |= (1 << 18) | (1 << 19) | (1 << 23);
 
     // Enable Interrupt 18 when transfer completion
     EDMA3_IESR |= (1 << 18);

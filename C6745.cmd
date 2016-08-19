@@ -45,8 +45,9 @@ SECTIONS
     .ppinfo        >  SHDSPL2RAM
     .ppdata        >  SHDSPL2RAM
 
-    .Daydream      >	SHDSPL2RAM
-  	.vecs		   >	SHDSPL2RAM
+    .Daydream		>	SHDSPL2RAM
+    .DataInSdram	>	SHDSPL2RAM
+  	.vecs			>	SHDSPL2RAM
 
     /* COFF sections */
     .pinit         >  SHDSPL2RAM

@@ -6,9 +6,15 @@
  */
 
 #include "main.h"
-
-#pragma DATA_SECTION (sampledata,".Daydream")
-uint16_t sampledata[6144];  // 采集1024点,6个通道,每个通道16位
+/*
+ * 采样率为75KHz的话,75000/50=1500
+ * 即每个周波要采集1500点,每个点的数据为有符号的16位数,采10个周波的点
+ * 1500*6*10=90000
+ */
+#pragma DATA_SECTION (sampledata1,".Daydream")
+int16_t sampledata1[1500*6];  // 前5个周波,每个周波采集1500点,6个通道,每个通道16位
+#pragma DATA_SECTION (sampledata2,".Daydream")
+int16_t sampledata2[1500*6];  // 后5个周波,每个周波采集1500点,6个通道,每个通道16位
 #pragma DATA_SECTION (AD_Parameter,".Daydream")
 uint16_t AD_Parameter[6] = {0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05};
 uint16_t AD_offset = 0;     // 用于抵消每次发送CR控制字产生的额外一次SPI1发送中断事件
@@ -166,11 +172,11 @@ void PaRAM_Set18_Receive(void)
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[18].SRC = (uint32_t)&SPI1_SPIBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[18].DST = (uint32_t)&sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[18].DST = (uint32_t)&sampledata1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[18].BCNT_ACNT = (6144 << 16) | 2;
-    EDMA3CC_PARAMSET->PaRAMSet[18].Rsvd_CCNT = 1;
+    EDMA3CC_PARAMSET->PaRAMSet[18].BCNT_ACNT = (9000 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[18].Rsvd_CCNT = 5;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
     EDMA3CC_PARAMSET->PaRAMSet[18].DSTBIDX_SRCBIDX = (2 << 16) | 0;
@@ -190,15 +196,15 @@ void PaRAM_Set127_Receive_18Linking(void)
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
     // 传输完成中断使能(1 << 20),传输结束代码为(18 << 12)
-    EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
+    EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((19 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)&SPI1_SPIBUF;
-    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)&sampledata;
+    EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)&sampledata2;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (6144 << 16) | 2;
-    EDMA3CC_PARAMSET->PaRAMSet[127].Rsvd_CCNT = 1;
+    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (9000 << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[127].Rsvd_CCNT = 5;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
     EDMA3CC_PARAMSET->PaRAMSet[127].DSTBIDX_SRCBIDX = (2 << 16) | 0;
@@ -242,11 +248,15 @@ void EDMA3_SPI1_Init(void)
     // Event 19 -> SPI1 发送中断
     // Event 23 -> GPIO Bank3 中断
 
-    uint16_t i;
-    uint16_t *dataPointer;
+    uint32_t i;
+    int16_t *dataPointer;
 
     EDMA3_Reset();
 
+    /*
+     * TMS320C6745中EDMA3的传输完成中断只有这个:EDMA3_CC0_INT1
+     * 因些所有想使能中断的通道都必须映射到影子区域1即(EDMA3_DRAE1)
+     */
     // Enable Channel 18 & 19 & 23 to DSP (Region 1)
     EDMA3_DRAE1 = (1 << 18) | (1 << 19) | (1 << 23);
 
@@ -270,8 +280,11 @@ void EDMA3_SPI1_Init(void)
     EDMA3_IESR = (1 << 18);
 
     // Initialize sampledata Buffers
-    dataPointer = (uint16_t*)sampledata;
-    for(i = 0; i < (1024 * 6); i++)
+    dataPointer = (int16_t*)sampledata1;
+    for(i = 0; i < (1500*6); i++)
+        *dataPointer++ = 1;
+    dataPointer = (int16_t*)sampledata2;
+    for(i = 0; i < (1500*6); i++)
         *dataPointer++ = 1;
 }
 

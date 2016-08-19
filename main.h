@@ -24,6 +24,7 @@
 #include "Header/SPI.h"
 
 #define SW_BREAKPOINT	asm( " SWBP 0" );
+#define CYCLE_SIZE 1500 // 在每个周波中每个通道采集1500点
 
 //Init Functions
 void Init_Data_Cache(void);

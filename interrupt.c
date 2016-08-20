@@ -7,14 +7,18 @@
 
 #include "main.h"
 
-extern int16_t sampledata1[1500*6];
-extern int16_t sampledata2[1500*6];
-extern int16_t vva[CYCLE_SIZE];
-extern int16_t vvb[CYCLE_SIZE];
-extern int16_t vvc[CYCLE_SIZE];
-extern int16_t cca[CYCLE_SIZE];
-extern int16_t ccb[CYCLE_SIZE];
-extern int16_t ccc[CYCLE_SIZE];
+
+
+uint16_t datasource = DATA1;
+
+extern int16_t sampledata1[WAVE_POINT*6];
+extern int16_t sampledata2[WAVE_POINT*6];
+extern int16_t vva[WAVE_POINT];
+extern int16_t vvb[WAVE_POINT];
+extern int16_t vvc[WAVE_POINT];
+extern int16_t cca[WAVE_POINT];
+extern int16_t ccb[WAVE_POINT];
+extern int16_t ccc[WAVE_POINT];
 
 uint16_t count = 0;
 
@@ -51,48 +55,42 @@ interrupt void EDMA3_CC0_INT1_isr(void)
         // Read EDMA3 Interrupt Pending Register
         regIPR = EDMA3_IPR;
 
-        if(regIPR & (1 << 18))
+        if((regIPR & (1 << 18)) && (datasource == DATA1))
         {
-            for(i = 0; i < 1500; i++)
+            if(datasource == DATA1)
             {
-                vva[i]=sampledata1[i*6];
-                vvb[i]=sampledata1[i*6+1];
-                vvc[i]=sampledata1[i*6+2];
-                cca[i]=sampledata1[i*6+3];
-                ccb[i]=sampledata1[i*6+4];
-                ccc[i]=sampledata1[i*6+5];
+                for(i = 0; i < 1500; i++)
+                {
+                    vva[i]=sampledata1[i*6];
+                    vvb[i]=sampledata1[i*6+1];
+                    vvc[i]=sampledata1[i*6+2];
+                    cca[i]=sampledata1[i*6+3];
+                    ccb[i]=sampledata1[i*6+4];
+                    ccc[i]=sampledata1[i*6+5];
+                }
+                datasource = DATA2;
             }
-
+            else if(datasource == DATA2)
+            {
+                for(i = 0; i < 1500; i++)
+                {
+                    vva[i]=sampledata2[i*6];
+                    vvb[i]=sampledata2[i*6+1];
+                    vvc[i]=sampledata2[i*6+2];
+                    cca[i]=sampledata2[i*6+3];
+                    ccb[i]=sampledata2[i*6+4];
+                    ccc[i]=sampledata2[i*6+5];
+                }
+                datasource = DATA1;
+            }
             // Clear the corresponding bit in the Interrupt Pending Interrupt
-            EDMA3_ICR |= (1 << 18);  //必须向ICR相应位写入1,来手动清零IPR中相应位
-            count++;
-            if(99 == count)
-            {
-                //SW_BREAKPOINT
-                count = 0;
-            }
+            EDMA3_ICR = (1 << 18);  //必须向ICR相应位写入1,来手动清零IPR中相应位
+//            count++;
+//            if(99 == count)
+//            {
+//                //SW_BREAKPOINT
+//                count = 0;
+//            }
         }
-        if(regIPR & (1 << 19))
-        {
-            for(i = 0; i < 1500; i++)
-            {
-                vva[i]=sampledata2[i*6];
-                vvb[i]=sampledata2[i*6+1];
-                vvc[i]=sampledata2[i*6+2];
-                cca[i]=sampledata2[i*6+3];
-                ccb[i]=sampledata2[i*6+4];
-                ccc[i]=sampledata2[i*6+5];
-            }
-
-            // Clear the corresponding bit in the Interrupt Pending Interrupt
-            EDMA3_ICR |= (1 << 19);  //必须向ICR相应位写入1,来手动清零IPR中相应位
-            count++;
-            if(99 == count)
-            {
-                //SW_BREAKPOINT
-                count = 0;
-            }
-        }
-
     }
 }

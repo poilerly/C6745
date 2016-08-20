@@ -12,9 +12,9 @@
  * 1500*6*10=90000
  */
 #pragma DATA_SECTION (sampledata1,".Daydream")
-int16_t sampledata1[1500*6];  // 前5个周波,每个周波采集1500点,6个通道,每个通道16位
+int16_t sampledata1[WAVE_POINT*6];  // 前5个周波,每个周波采集1500点,6个通道,每个通道16位
 #pragma DATA_SECTION (sampledata2,".Daydream")
-int16_t sampledata2[1500*6];  // 后5个周波,每个周波采集1500点,6个通道,每个通道16位
+int16_t sampledata2[WAVE_POINT*6];  // 后5个周波,每个周波采集1500点,6个通道,每个通道16位
 #pragma DATA_SECTION (AD_Parameter,".Daydream")
 uint16_t AD_Parameter[6] = {0x0BFF,0xFC05,0x0BFF,0xFC05,0x0BFF,0xFC05};
 uint16_t AD_offset = 0;     // 用于抵消每次发送CR控制字产生的额外一次SPI1发送中断事件
@@ -175,8 +175,8 @@ void PaRAM_Set18_Receive(void)
     EDMA3CC_PARAMSET->PaRAMSet[18].DST = (uint32_t)&sampledata1;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[18].BCNT_ACNT = (9000 << 16) | 2;
-    EDMA3CC_PARAMSET->PaRAMSet[18].Rsvd_CCNT = 5;
+    EDMA3CC_PARAMSET->PaRAMSet[18].BCNT_ACNT = ((WAVE_POINT * 6) << 16) | 2;
+    EDMA3CC_PARAMSET->PaRAMSet[18].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
     EDMA3CC_PARAMSET->PaRAMSet[18].DSTBIDX_SRCBIDX = (2 << 16) | 0;
@@ -189,6 +189,34 @@ void PaRAM_Set18_Receive(void)
 }
 
 
+void PaRAM_Set126_Receive_18Linking(void)
+{
+    // Reset EDMA2 PaRAM OPT Register
+    EDMA3CC_PARAMSET->PaRAMSet[126].OPT = 0x00000000;
+
+    // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
+    // 传输完成中断使能(1 << 20),传输结束代码为(18 << 12)
+    EDMA3CC_PARAMSET->PaRAMSet[126].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
+
+    // Initialize EDMA Event Src and Dst Addresses
+    EDMA3CC_PARAMSET->PaRAMSet[126].SRC = (uint32_t)&SPI1_SPIBUF;
+    EDMA3CC_PARAMSET->PaRAMSet[126].DST = (uint32_t)&sampledata1;
+
+    // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
+    EDMA3CC_PARAMSET->PaRAMSet[126].BCNT_ACNT = ((WAVE_POINT * 6) << 16) | 2;;
+    EDMA3CC_PARAMSET->PaRAMSet[126].Rsvd_CCNT = 1;
+
+    // Set EDMA Event PaRAM SRC/DST BIDX bytes
+    EDMA3CC_PARAMSET->PaRAMSet[126].DSTBIDX_SRCBIDX = (2 << 16) | 0;
+
+    // Set EDMA Event PaRAM SRC/DST CIDX
+    EDMA3CC_PARAMSET->PaRAMSet[126].DSTCIDX_SRCCIDX = (0 << 16) | 0;
+
+    // Set EDMA Event PaRAM LINK and BCNTRLD
+    EDMA3CC_PARAMSET->PaRAMSet[126].BCNTRLD_LINK = (0 << 16) | 0x4FE0;
+}
+
+
 void PaRAM_Set127_Receive_18Linking(void)
 {
     // Reset EDMA2 PaRAM OPT Register
@@ -196,15 +224,15 @@ void PaRAM_Set127_Receive_18Linking(void)
 
     // Config PaRAM OPT: Enable TC Interrupt; Set Transfer complete code(TCC)
     // 传输完成中断使能(1 << 20),传输结束代码为(18 << 12)
-    EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((19 << 12) & 0x0003F000);
+    EDMA3CC_PARAMSET->PaRAMSet[127].OPT = (1 << 20) | ((18 << 12) & 0x0003F000);
 
     // Initialize EDMA Event Src and Dst Addresses
     EDMA3CC_PARAMSET->PaRAMSet[127].SRC = (uint32_t)&SPI1_SPIBUF;
     EDMA3CC_PARAMSET->PaRAMSet[127].DST = (uint32_t)&sampledata2;
 
     // Set EDMA Event PaRAM A,B,C CNT (ACNT in bytes)
-    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = (9000 << 16) | 2;
-    EDMA3CC_PARAMSET->PaRAMSet[127].Rsvd_CCNT = 5;
+    EDMA3CC_PARAMSET->PaRAMSet[127].BCNT_ACNT = ((WAVE_POINT * 6) << 16) | 2;;
+    EDMA3CC_PARAMSET->PaRAMSet[127].Rsvd_CCNT = 1;
 
     // Set EDMA Event PaRAM SRC/DST BIDX bytes
     EDMA3CC_PARAMSET->PaRAMSet[127].DSTBIDX_SRCBIDX = (2 << 16) | 0;
@@ -213,7 +241,7 @@ void PaRAM_Set127_Receive_18Linking(void)
     EDMA3CC_PARAMSET->PaRAMSet[127].DSTCIDX_SRCCIDX = (0 << 16) | 0;
 
     // Set EDMA Event PaRAM LINK and BCNTRLD
-    EDMA3CC_PARAMSET->PaRAMSet[127].BCNTRLD_LINK = (0 << 16) | 0x4FE0;
+    EDMA3CC_PARAMSET->PaRAMSet[127].BCNTRLD_LINK = (0 << 16) | 0x4FC0;
 }
 
 
@@ -271,6 +299,7 @@ void EDMA3_SPI1_Init(void)
     PaRAM_Set125_Transmit_19Linking();
 
     PaRAM_Set18_Receive();
+    PaRAM_Set126_Receive_18Linking();
     PaRAM_Set127_Receive_18Linking();
 
     // Enable Event 18 & 19 & 23
@@ -281,10 +310,10 @@ void EDMA3_SPI1_Init(void)
 
     // Initialize sampledata Buffers
     dataPointer = (int16_t*)sampledata1;
-    for(i = 0; i < (1500*6); i++)
+    for(i = 0; i < (WAVE_POINT*6); i++)
         *dataPointer++ = 1;
     dataPointer = (int16_t*)sampledata2;
-    for(i = 0; i < (1500*6); i++)
+    for(i = 0; i < (WAVE_POINT*6); i++)
         *dataPointer++ = 1;
 }
 

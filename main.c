@@ -4,7 +4,18 @@
  *  Created on: 2016年4月10日
  *      Author: poiler
  */
+
+/************************************************************************
+ * 命名规则:                                                            *
+ * 函数采用帕斯卡命名法：多个单词组成一个名称时，每个单词的首字母大写;  *
+ * 变量都采用小写;                                                      *
+ * 宏定义全部大。                                                       *
+ *                                                                      *
+ ************************************************************************/
+
 #include "main.h"
+
+uint8_t harmonicflag = FALSE;
 
 int main(void)
 {
@@ -20,6 +31,8 @@ int main(void)
 
 	eHRPWM0();					// 输出PWM波(CONVST_x signal)
 
+	FFT_Init(); // 4项3阶Nuttall窗函数的计算
+
 	_enable_interrupts();     // 使能全局中断
 
 	GPIO_ADS8556_Release();   // ADS8556脱离复位
@@ -28,7 +41,11 @@ int main(void)
 
     while(1)
     {
-
+        if(harmonicflag == TRUE)
+        {
+            HarmomicProcess();
+            ParameterCalculation();
+        }
     }
 }
 

@@ -7,20 +7,66 @@
 
 #include "main.h"
 
+extern uint8_t harmonicflag;
+extern int16_t sampledata1[];
+extern int16_t sampledata2[];
+extern int16_t vola_sample[];
+extern int16_t volb_sample[];
+extern int16_t volc_sample[];
+extern int16_t cura_sample[];
+extern int16_t curb_sample[];
+extern int16_t curc_sample[];
 
 
-uint16_t datasource = DATA1;
+//#pragma DATA_SECTION (vol_a,".DataInSdram")     // A通道电压一周波采样数据
+//int16_t vol_a[WAVE_POINT];
+//#pragma DATA_SECTION (vol_b,".DataInSdram")     // B通道电压一周波采样数据
+//int16_t vol_b[WAVE_POINT];
+//#pragma DATA_SECTION (vol_c,".DataInSdram")     // C通道电压一周波采样数据
+//int16_t vol_c[WAVE_POINT];
+//#pragma DATA_SECTION (cur_a,".DataInSdram")     // A通道电流一周波采样数据
+//int16_t cur_a[WAVE_POINT];
+//#pragma DATA_SECTION (cur_b,".DataInSdram")     // B通道电流一周波采样数据
+//int16_t cur_b[WAVE_POINT];
+//#pragma DATA_SECTION (cur_c,".DataInSdram")     // C通道电流一周波采样数据
+//int16_t cur_c[WAVE_POINT];
 
-extern int16_t sampledata1[WAVE_POINT*6];
-extern int16_t sampledata2[WAVE_POINT*6];
-extern int16_t vva[WAVE_POINT];
-extern int16_t vvb[WAVE_POINT];
-extern int16_t vvc[WAVE_POINT];
-extern int16_t cca[WAVE_POINT];
-extern int16_t ccb[WAVE_POINT];
-extern int16_t ccc[WAVE_POINT];
+#pragma DATA_SECTION (Origin,".DataInSdram")    //不知道这样是否是野指针
+OriginData Origin;
 
-uint16_t count = 0;
+
+uint8_t datasource = DATA1;
+uint16_t fftpoint = 0;
+
+
+/*
+ * 把ADS8556采样一个周波的6个通道的数据分别分对应到各相电压电流
+ */
+void DistributeData(void)
+{
+    uint16_t i;
+    int16_t *data;
+    if(datasource == DATA1)
+    {
+        data = sampledata1;
+        datasource = DATA2;
+    }
+    else if(datasource == DATA2)
+    {
+        data = sampledata2;
+        datasource = DATA1;
+    }
+    for(i = 0; i < 1500; i++)
+    {
+        Origin->ua[i]=data[i*6];
+        Origin->ub[i]=data[i*6+1];
+        Origin->uc[i]=data[i*6+2];
+        Origin->ia[i]=data[i*6+3];
+        Origin->ib[i]=data[i*6+4];
+        Origin->ic[i]=data[i*6+5];
+    }
+}
+
 
 void INTC_Init(void)
 {
@@ -37,60 +83,57 @@ void INTC_Init(void)
 	IER = (1 << 1) | (1 << 4);  // 使能中断EDMA3_CC0_INT1
 }
 
+
 /*
  * EDMA3 Interrupt Servicing
  * 1. 读取中断挂起寄存器(IPR)
  * 2. 执行所需要的操作
- * 3. 对ICR 写1 来清除IPR 的相应位
+ * 3. 对ICR中相应位写1来清除IPR的相应位
  * 4. 再次读取IPR:
- *    (a) 如果IPR 不是0，返回第二步(说明在2 到4 步中有新的事件到来)
- *    (b) 如果IPR 是0，需要确认所有使能中断是处于激活状态
+ *    (a) 如果IPR不是0，返回第二步(说明在2到4步中有新的事件到来)
+ *    (b) 如果IPR是0，需要确认所有使能中断是处于激活状态
  */
 interrupt void EDMA3_CC0_INT1_isr(void)
 {
     uint32_t regIPR;
-    uint32_t i;
+    uint16_t i,temp;
     while(EDMA3_IPR != 0)
     {
         // Read EDMA3 Interrupt Pending Register
         regIPR = EDMA3_IPR;
 
-        if((regIPR & (1 << 18)) && (datasource == DATA1))
+        if(regIPR & (1 << 18))
         {
-            if(datasource == DATA1)
+            DistributeData();
+
+            if(harmonicflag == FALSE)
             {
-                for(i = 0; i < 1500; i++)
+                /*
+                 * 对电压和电流离散数组进行10分频,提取出1024点用于FFT计算,
+                 * 故采样率为75000/10=7500.
+                 */
+                for(i = 0; i < (WAVE_POINT / 10); i++)
                 {
-                    vva[i]=sampledata1[i*6];
-                    vvb[i]=sampledata1[i*6+1];
-                    vvc[i]=sampledata1[i*6+2];
-                    cca[i]=sampledata1[i*6+3];
-                    ccb[i]=sampledata1[i*6+4];
-                    ccc[i]=sampledata1[i*6+5];
+                    temp = i * 10;
+                    vola_sample[fftpoint] = Origin->ua[temp];
+                    volb_sample[fftpoint] = Origin->ub[temp];
+                    volc_sample[fftpoint] = Origin->uc[temp];
+                    cura_sample[fftpoint] = Origin->ia[temp];
+                    curb_sample[fftpoint] = Origin->ib[temp];
+                    curc_sample[fftpoint] = Origin->ic[temp];
+                    fftpoint++;
+                    if(fftpoint >= FFT_POINT)   // 150*6=900,150*7=1050
+                    {
+                        fftpoint = 0;
+                        harmonicflag = TRUE;
+                        break;
+                    }
                 }
-                datasource = DATA2;
             }
-            else if(datasource == DATA2)
-            {
-                for(i = 0; i < 1500; i++)
-                {
-                    vva[i]=sampledata2[i*6];
-                    vvb[i]=sampledata2[i*6+1];
-                    vvc[i]=sampledata2[i*6+2];
-                    cca[i]=sampledata2[i*6+3];
-                    ccb[i]=sampledata2[i*6+4];
-                    ccc[i]=sampledata2[i*6+5];
-                }
-                datasource = DATA1;
-            }
+
             // Clear the corresponding bit in the Interrupt Pending Interrupt
             EDMA3_ICR = (1 << 18);  //必须向ICR相应位写入1,来手动清零IPR中相应位
-//            count++;
-//            if(99 == count)
-//            {
-//                //SW_BREAKPOINT
-//                count = 0;
-//            }
         }
     }
 }
+

@@ -5,92 +5,67 @@
  *      Author: poiler
  */
 
-#ifndef HARMONIC_H_
-#define HARMONIC_H_
+#ifndef C6745_ADS8556_HARMONIC_H_
+#define C6745_ADS8556_HARMONIC_H_
 
 #include "main.h"
-#include "dsplib/DSPF_sp_fftSPxSP.h"
-
-extern uint8_t harmonicflag;
-
-#pragma DATA_SECTION (vola_sample,".DataInSdram")     // A通道电压FFT数据
-int16_t vola_sample[FFT_POINT];
-#pragma DATA_SECTION (volb_sample,".DataInSdram")     // B通道电压FFT数据
-int16_t volb_sample[FFT_POINT];
-#pragma DATA_SECTION (volc_sample,".DataInSdram")     // C通道电压FFT数据
-int16_t volc_sample[FFT_POINT];
-#pragma DATA_SECTION (cura_sample,".DataInSdram")     // A通道电流FFT数据
-int16_t cura_sample[FFT_POINT];
-#pragma DATA_SECTION (curb_sample,".DataInSdram")     // B通道电流FFT数据
-int16_t curb_sample[FFT_POINT];
-#pragma DATA_SECTION (curc_sample,".DataInSdram")     // C通道电流FFT数据
-int16_t curc_sample[FFT_POINT];
-
-#pragma DATA_SECTION (volb_win,".DataInSdram")     // A通道电压加窗后的数据
-float vola_win[FFT_POINT];
-#pragma DATA_SECTION (volb_win,".DataInSdram")     // B通道电压加窗后的数据
-float volb_win[FFT_POINT];
-#pragma DATA_SECTION (vola_win,".DataInSdram")     // C通道电压加窗后的数据
-float volc_win[FFT_POINT];
-#pragma DATA_SECTION (cura_win,".DataInSdram")     // A通道电流加窗后的数据
-float cura_win[FFT_POINT];
-#pragma DATA_SECTION (curb_win,".DataInSdram")     // B通道电流加窗后的数据
-float curb_win[FFT_POINT];
-#pragma DATA_SECTION (curc_win,".DataInSdram")     // C通道电流加窗后的数据
-float curc_win[FFT_POINT];
-
-#pragma DATA_SECTION (nuttallwin,".DataInSdram")       //Nuttall窗函数数值计算
-float nuttallwin[FFT_POINT];
+#include "Header/Vars.h"
 
 
-/* 电压电流的基波频率 */
-float vola_freq;
-float volb_freq;
-float volc_freq;
-float cura_freq;
-float cura_freq;
-float cura_freq;
+/* 要做FFT分析的数据 */
+#pragma DATA_SECTION (fft,".DataInSdram")
+FFTData fft;
+
+/* 要做FFT分析并加窗后的数据 */
+#pragma DATA_SECTION (fft_win,".DataInSdram")
+FFTData fft_win;
+
+/* Nuttall窗函数数值计算 */
+#pragma DATA_SECTION (nuttallwin,".DataInSdram")
+float nuttallwin[FFT_SIZE];
+
+/* FFT后求得的电压流的基波频率 */
+#pragma DATA_SECTION (funfreq,".DataInSdram")
+FreqData funfreq;
 
 /* 基波及各次谐波电压电流的均方根值 */
-#pragma DATA_SECTION (vola_rms,".DataInSdram")
-float vola_rms[HARM_N];
-float volb_rms[HARM_N];
-float volc_rms[HARM_N];
-float cura_rms[HARM_N];
-float curb_rms[HARM_N];
-float curc_rms[HARM_N];
+#pragma DATA_SECTION (rms,".DataInSdram")
+HarmData rms;
 
 /* 基波及各次谐波电压电流的相角 */
-#pragma DATA_SECTION (vola_phase,".DataInSdram")
-float vola_phase[HARM_N];
-float volb_phase[HARM_N];
-float volc_phase[HARM_N];
-float cura_phase[HARM_N];
-float curb_phase[HARM_N];
-float curc_phase[HARM_N];
+#pragma DATA_SECTION (phase,".DataInSdram")
+HarmData phase;
+
 
 /* 基波及各次谐波电压与电流之间的夹角 */
-float phasea[HARM_N];
-float phaseb[HARM_N];
-float phasec[HARM_N];
+float phasea[Harm_P];
+float phaseb[Harm_P];
+float phasec[Harm_P];
 
 #pragma DATA_ALIGN (w, 8)           // 存放旋转因子
-float w[2 * FFT_POINT];
-#pragma DATA_ALIGN(pCFFT_In, 8)     // The alignment is very important
-float pCFFT_In[2 * FFT_POINT + 4];
-#pragma DATA_ALIGN(pCFFT_Out, 8)    // for input/ouput and twiddle pointers
-float pCFFT_Out[2 * FFT_POINT + 4];
+float w[2*FFT_SIZE];
+#pragma DATA_ALIGN(pCFFT_In, 8)     // 存放FFT计算原始数据的中间变量
+float pCFFT_In[2*FFT_SIZE+4];
+#pragma DATA_ALIGN(pCFFT_Out, 8)    // 存放FFT计算结果
+float pCFFT_Out[2*FFT_SIZE+4];
+#pragma DATA_SECTION (result_real,".DataInSdram") // 存放FFT结果的实部
+float result_real[FFT_SIZE];
+#pragma DATA_SECTION (result_imag,".DataInSdram") // 存放FFT结果的虚部
+float result_imag[FFT_SIZE];
+#pragma DATA_SECTION (result_ap,".DataInSdram") // 做FFT算出来的幅值
+float result_ap[FFT_SIZE];
+#pragma DATA_SECTION (result_ph,".DataInSdram") // 做FFT算出来的相角
+float result_ph[FFT_SIZE];
 
-#pragma DATA_SECTION (CFFT_real,".DataInSdram")          // 存放FFT结果的实部
-float CFFT_real[FFT_POINT];
-#pragma DATA_SECTION (CFFT_imag,".DataInSdram")          // 存放FFT结果的虚部
-float CFFT_imag[FFT_POINT];
-#pragma DATA_SECTION (CFFT_amplitude,".DataInSdram")     // 做FFT算出来的幅值
-float CFFT_amplitude[FFT_POINT];
-#pragma DATA_SECTION (CFFT_phase,".DataInSdram")         // 做FFT算出来的相角
-float CFFT_phase[FFT_POINT];
+#pragma DATA_ALIGN(pCFFT_InvOut, 8)
+float pCFFT_InvOut[2*FFT_SIZE+4];
+#pragma DATA_ALIGN(pCFFT_InOrig, 8)
+float pCFFT_InOrig[2*FFT_SIZE+4];
+#pragma DATA_ALIGN(pCTemp, 8)
+float pCTemp[2*FFT_SIZE+4];
 
 
+/* 二进制位翻转 */
 #pragma DATA_ALIGN (brev , 8)
 unsigned char brev[64] = {
     0x0, 0x20, 0x10, 0x30, 0x8, 0x28, 0x18, 0x38,
@@ -120,4 +95,11 @@ int calibration_coeff[9]={
         0//-19//197     //   Gama_c    = 0;        //c相 角差（弧度）*10000       ={0,0,0,0,0,0,0,0,0};/*
 };
 
-#endif /* HARMONIC_H_ */
+float  abd=0.1,abdd=0.1;
+int as=1,bs=1;
+int ds=1,cs=1;
+
+//三相电流电压矫正系数
+ Correct_cor Correct ={ -710.8638 ,-644.012 ,1.0602 , 0 , 0.7609 ,  0};
+
+#endif /* C6745_ADS8556_HARMONIC_H_ */

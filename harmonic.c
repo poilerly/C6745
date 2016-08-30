@@ -1,8 +1,8 @@
 /*
  * harmonic.c
- *
- *  Created on: 2016年8月19日
- *      Author: poiler
+ *    Function: 快速傅里叶变换 / 快速傅里叶逆变换
+ *  Created on: 2016年8月21日
+ *      Author: QW & poiler
  */
 
 #include "harmonic.h"
@@ -28,20 +28,20 @@ float InvSqrt(float x)      // to compute x^-0.5
  * float *w : 指向储存旋转因子的数组,数组长度为2*N(做FFT的序列的长度)
  * int n    : 即N(做FFT的序列的长度)
  */
-void Gen_Twiddle_FFT_Sp (float *w, uint16_t n)
+void Gen_Twiddle_FFT_Sp(float *w, uint16_t n)
 {
     uint16_t i, j, k;
     double x_t, y_t, theta1, theta2, theta3;
 
-    for (j = 1, k = 0; j <= n >> 2; j = j << 2)
+    for (j = 1, k = 0; j <= n >> 2; j = j << 2) //>>优先级高于<或<=
     {
         for (i = 0; i < n >> 2; i += j)
         {
             theta1 = 2 * PI * i / n;
             x_t = cos (theta1);
-            y_t = sin (theta1);
+            y_t = sin (theta1);     //y_t=sin(2*pi*i/n)
             w[k] = (float) x_t;
-            w[k + 1] = (float) y_t;
+            w[k + 1] = (float) y_t; //生成数组
 
             theta2 = 4 * PI * i / n;
             x_t = cos (theta2);
@@ -61,18 +61,21 @@ void Gen_Twiddle_FFT_Sp (float *w, uint16_t n)
 
 
 /*
- * 4项3阶Nuttall窗函数的计算.
+ * 4阶3项Nuttall窗函数初始化，参数设置见卿柏元论文
+ * EX=1000；为放大倍数
  */
-void NuttallWinCalculation(void)
+void NuttallWin_Init(void)
 {
+    //窗函数初始化用
     uint16_t i;
-    for(i = 0; i < FFT_POINT; i++)  // 卿柏元的论文中n=1,2,...,N-1.只有1023个点
+    for(i = 0; i < FFT_SIZE; i++)  // 卿柏元的论文中n=1,2,...,N-1.只有1023个点
     {
         nuttallwin[i]=(0.338946 \
-                -0.481973 * cos(2 * PI * i / FFT_POINT) \
-                +0.161054 * cos(4 * PI * i / FFT_POINT) \
-                -0.018027 * cos(6 * PI * i / FFT_POINT) \
+                -0.481973 * cos(2 * PI * i / FFT_SIZE) \
+                +0.161054 * cos(4 * PI * i / FFT_SIZE) \
+                -0.018027 * cos(6 * PI * i / FFT_SIZE) \
                 )*EX;
+        //放大 32768 倍以减少数据损失,在 interpolation() 内缩小32768倍;    1.85218e-4)=Vref * 0.6575/32768  /30  * 300
     }
 }
 
@@ -80,10 +83,10 @@ void NuttallWinCalculation(void)
 void FFT_Init(void)
 {
     /* 窗函数的数值只要计算一次就可以了 */
-    NuttallWinCalculation();
+    NuttallWin_Init();
 
     /* 产生旋转因子,因为做FFT的点数是固定的,所以旋转因子只要产生一次就可以了*/
-    Gen_Twiddle_FFT_Sp(w, FFT_POINT);
+    Gen_Twiddle_FFT_Sp(w, FFT_SIZE);
 }
 
 
@@ -96,118 +99,164 @@ void FFT_Window(void)
 {
     uint16_t i;
 
-    for(i = 0; i < FFT_POINT; i++)
+    for(i = 0; i < FFT_SIZE; i++)
     {
-        vola_win[i] = (float)vola_sample[i] * nuttallwin[i] * 0.0163;
-        volb_win[i] = (float)volb_sample[i] * nuttallwin[i] * 0.0163;
-        volc_win[i] = (float)volc_sample[i] * nuttallwin[i] * 0.0163;
+        fft_win.Ua[i] = fft.Ua[i] * nuttallwin[i] * 0.0163;
+        fft_win.Ia[i] = fft.Ia[i] * nuttallwin[i] * 0.0004;
 
-        cura_win[i] = (float)cura_sample[i] * nuttallwin[i] * 0.0004;
-        curb_win[i] = (float)curb_sample[i] * nuttallwin[i] * 0.0004;
-        curc_win[i] = (float)curc_sample[i] * nuttallwin[i] * 0.0004;
+        fft_win.Ub[i] = fft.Ub[i] * nuttallwin[i] * 0.0163;
+        fft_win.Ib[i] = fft.Ib[i] * nuttallwin[i] * 0.0004;
+
+        fft_win.Uc[i] = fft.Uc[i] * nuttallwin[i] * 0.0163;
+        fft_win.Ic[i] = fft.Ic[i] * nuttallwin[i] * 0.0004;
     }
 }
 
-
-void Complex_FFT(float *pInput, uint16_t n)
+/*
+ * pInput: 做FFT的数据
+ * w: 旋转因子数组
+ * pCFFT_In: FFT输入的复数数组
+ * pCFFT_Out: FFT输出的复数数组
+ * result_real: FFT输出复数数组的实部
+ * result_imag: FFT输出复数数组的虚部
+ * result_ap: 幅值
+ * result_ph: 相位
+ */
+void Complex_FFT(float *pInput)
 {
     uint16_t i,rad;
-    float *twiddle;
 
-    /*
-     * 在计算中使用最小的FFT蝶形。
-     * 如果N是4的倍数，这通常被设置为4。否则，它通常被设置为2。
-     */
-    if (n == 16 || n == 64 || n == 256 || n == 1024 || n == 4096 || n == 16384)
-        rad = 4;
-    else if (n == 8 || n == 32 || n == 128 || n == 512 || n == 2048 || n == 8192)
-        rad = 2;
+    rad = 4;    // 确定快速傅里叶变换基
 
-    twiddle = (float *) w;
-
-    // complex FFT
-    for (i = 0; i < n; i++)
+    for (i = 0; i < FFT_SIZE; i++)
     {
-        pCFFT_In[2 * i] = pInput[i];    // update Real part
-        pCFFT_In[2 * i + 1] = 0;        // fill 0 for imag part
+        pCFFT_In[2*i] = pInput[i];    // 实部
+        pCFFT_In[2*i+1] = 0;        // 虚部填充为0
     }
 
-    // Forward FFT Calculation..
-    DSPF_sp_fftSPxSP (n, pCFFT_In, twiddle, pCFFT_Out, brev, rad, 0, n);
+    // 保留一份输入信号副本
+    memcpy(pCFFT_InOrig,pCFFT_In,2*FFT_SIZE*sizeof(float));
+    //=============================================================
 
-    CFFT_real[0] = 0;   //直流?
-    CFFT_imag[0] = 0;
-    CFFT_phase[0] = 0;  //也是直流,所以置0?
-    for(i = 1; i < n; i++)
+    // FFT 计算
+    DSPF_sp_fftSPxSP (FFT_SIZE, pCFFT_In, w, pCFFT_Out, brev, rad, 0, FFT_SIZE);
+
+
+    for(i = 0; i < FFT_SIZE; i++)
     {
-        CFFT_real[i] = pCFFT_Out[2 * i];
-        CFFT_imag[i] = pCFFT_Out[2 * i + 1];
+        result_real[i] = pCFFT_Out[2*i];
+        result_imag[i] = pCFFT_Out[2*i+1];
 
-        CFFT_amplitude[i] = CFFT_real[i]*CFFT_real[i] + CFFT_imag[i]*CFFT_imag[i];
-        CFFT_amplitude[i] = InvSqrt(CFFT_amplitude[i]) * CFFT_amplitude[i];
-        CFFT_phase[i] = atan2(CFFT_imag[i],CFFT_real[i]);
+        result_ap[i] = result_real[i]*result_real[i] + result_imag[i]*result_imag[i];
+        result_ap[i] = sqrtsp(result_ap[i]);
+        result_ap[i] = result_ap[i]*2/FFT_SIZE;
+
+//        result_ap[i] = InvSqrt(result_ap[i]) * result_ap[i];
     }
+    result_ap[0]=result_ap[0]/2;//直流分量
+
+    // 计算相位
+    result_ph[0] = 0;
+    for(i = 1; i < FFT_SIZE; i++)
+    {
+        result_ph[i] = atan2(result_imag[i],result_real[i]);
+        //得出结果为PI类型，即单位为"rad"；需要转换为角度，单位为"°"；
+        //角度=result_ph[i]*180/pi;
+    }
+
+    //=============================================================
+    //以下部分为逆变换，用于检测FFT是否运行成功，在正式运行代码时需要注释掉
+    //=============================================================
+    // 保留一份 FFT 结果副本
+    memcpy(pCTemp,pCFFT_Out,2*FFT_SIZE*sizeof(float));
+
+    // IFFT 计算
+    DSPF_sp_ifftSPxSP(FFT_SIZE,pCFFT_Out,w,pCFFT_InvOut,brev,rad,0,FFT_SIZE);
+
+    // 恢复 FFT 结果
+    memcpy(pCFFT_Out,pCTemp,2*FFT_SIZE*sizeof(float));
+
+    printf("\n复数 FFT 测试结果:");
+
+    uint8_t Flag;
+    for(i = 0; i < FFT_SIZE; i++)
+        if(abs(pCFFT_InOrig[i] - pCFFT_InvOut[i]) > F_TOL)
+            Flag = 1;
+
+    if(Flag == 1)
+        printf ("失败！\n");
+    else
+        printf ("成功！\n");
 }
 
 
-float FundamentalFrequency()
+/*
+ * 基波频率计算函数
+ */
+float Fundament_Freq()
 {
-    float wavefreq;
-    unsigned long t,t1,t2,pitch;
+    float funfreq;
+    int t,t1,t2;
+    unsigned long pitch;
     float maxValue1=0.0;
     float sub_max,midvalue,midvalue1,temp;
 
-    t1 =  (FB-20)*(FFT_POINT)/(FS);
-    t2 =  (FB+20)*(FFT_POINT)/(FS);
+    t1 =  (F1-20)*(FFT_SIZE)/(FS);      // 由Fs*t/N=(50+-20);得出基频点范围
+    t2 =  (F1+20)*(FFT_SIZE)/(FS);      // t1=4,  t2=9
     for(t = t1+1; t <= t2; t++)
     {
-        if(CFFT_amplitude[t] > maxValue1)
+        if(result_ap[t] > maxValue1)
         {
-            maxValue1 = CFFT_amplitude[t];
+            maxValue1 = result_ap[t];
             pitch = t;
         }
+        abd=maxValue1;
     }
-    if(CFFT_amplitude[pitch-1] > CFFT_amplitude[pitch+1])
+    if(result_ap[pitch-1] > result_ap[pitch+1])
     {
-         sub_max = CFFT_amplitude[pitch-1];
+         sub_max = result_ap[pitch-1];
          pitch=pitch-1;
 
     }
     else
     {
-        sub_max = CFFT_amplitude[pitch+1];
+        sub_max = result_ap[pitch+1];
         temp = sub_max;
         sub_max = maxValue1;
         maxValue1 = temp;
     }
 
     midvalue = (maxValue1-sub_max)/(maxValue1+sub_max);
+
     //midvalue1 = 3.49999999*midvalue;
     // al=2.95494514*be+0.17671943*(be^3)+0.09230694*(be^5);
     midvalue1 = 2.95494514*midvalue+0.17671943*(midvalue*midvalue*midvalue)+0.09230694*(midvalue*midvalue*midvalue*midvalue*midvalue);
-    wavefreq = ((float)pitch+midvalue1+0.5)*FS/FFT_POINT;
+//    abdd=midvalue1;
+    funfreq = ((float)pitch+midvalue1+0.5)*FS/FFT_SIZE;
 //    asm("\tnop");
 
-    return wavefreq;
+    return funfreq;
 }
 
 
-
-
-void Interpolation(float fn,float result_ap[],float result_ph[] ,int intflag)
+/*
+ * 双谱线插值算法
+ * 参数含义：
+ * fn：之前计算的基频频率，result_rms：校正后幅值，result_phase：校正后相角，intflag：含义待定
+ */
+void DoubleLine_Inter(float fn,float result_rms[],float result_phase[])
 {
-    int as,bs;
     int n;
     unsigned long pitch_t, t1, t2,  t;
     float sub_max, midvalue, midvalue1, temp;
     float maxValue1;
 
-    for(n=1;n<=HARM_N;n++)    // find the max and sub_max value near every order,计算n次谐波的值每次谐波计算一次
+    for(n = 1;n <= Harm_P; n++)    // find the max and sub_max value near every order,计算n次谐波的值每次谐波计算一次
     {
         maxValue1=0.0;
-        t1 = (n*fn-10)*FFT_POINT/FS;             //由Fs*t/N=(50+-10);得出谐波频点范围
-        t2 = (n*fn+10)*FFT_POINT/FS;
-        as=t1;bs=t2;    //  a=fn; b=fs;
+        t1 = (n*fn-10)*FFT_SIZE/FS;             //由Fs*t/N=(50+-10);得出谐波频点范围
+        t2 = (n*fn+10)*FFT_SIZE/FS;
+        as=t1;bs=t2;
 
         for(t=t1+1;t<=t2;t++)
         {
@@ -237,17 +286,17 @@ void Interpolation(float fn,float result_ap[],float result_ph[] ,int intflag)
         midvalue1 = 2.95494514*midvalue+0.17671943*(midvalue*midvalue*midvalue) \
                 +0.09230694*(midvalue*midvalue*midvalue*midvalue*midvalue);
 
-        result_ap[n-1] = (sub_max+maxValue1)*(3.20976143+0.9187393*(midvalue1 * midvalue1) \
-                +0.14734229*(midvalue1*midvalue1*midvalue1*midvalue1))/FFT_POINT/EX;
+        result_rms[n-1] = (sub_max+maxValue1)*(3.20976143+0.9187393*(midvalue1*midvalue1) \
+                +0.14734229*(midvalue1*midvalue1*midvalue1*midvalue1))/FFT_SIZE/EX;
 
-        result_ph[n-1]= (result_ph[pitch_t]+PI/2-PI*(midvalue1+0.5));
+        result_phase[n-1] = (result_ph[pitch_t]+PI/2-PI*(midvalue1+0.5));
         // 弧度   (进行了修改----(result_ph[pitch_t]+PI/2-PI*(midvalue1+0.5)))
         // 这里和唐老师仿真程序是一样的。对照卿柏元论文可知。
     }
 }
 
 
-void PhaseCalculation(float * vol_phase,float*  cur_phase,float* phase ,int coeff)
+void PhaseCalculation(float* vol_phase,float* cur_phase,float* phase ,int coeff)
 {
     short u;
     float pherro;
@@ -270,102 +319,27 @@ void PhaseCalculation(float * vol_phase,float*  cur_phase,float* phase ,int coef
 /*
  * 谐波分析处理的函数
  */
-void HarmomicProcess(void)
+void Harmonic_Pro(void)
 {
-    /* 对离散信号电压电流进行加窗处理 */
+    uint16_t i;
+    for(i = 0; i < FFT_SIZE; i++)  //直流偏置校
+        fft.Ua[i] = (fft.Ua[i]) + Correct.DCbias_Ua;
+
+    for(i = 0; i < FFT_SIZE; i++)  //比差校准,并换算成电压实际值220V来算
+        fft.Ua[i] = 323.5294 * (fft.Ua[i] * Correct.ratio_Uaf)/32767;
+
+    /* 对A、B、C 三相电压电流信号进行加窗处理 */
     FFT_Window();
 
-    /*
-     * A相电压电流的幅值,频率,相角计算
-     */
-    Complex_FFT(vola_win,FFT_POINT);  // A相电压进行FFT计算
+    /* A相电压进行FFT计算 */
+    Complex_FFT(fft_win.Ua);
 
-    vola_freq = FundamentalFrequency(); // 计算A相电压对应的基波频率
+    /* 计算A相电压的基波频率 */
+    funfreq.Ua = Fundament_Freq();
 
-    vola_freq = vola_freq * 1.008488888665938 - 0.433567223783763; // 基波电压频率校准
+    /* 校准A相电压的基波频率 */
+    funfreq.Ua = funfreq.Ua * 1.008488888665938 - 0.433567223783763;
 
-    Interpolation(vola_freq,vola_rms,vola_phase,1);  // 计算A相电压的幅值及相角
-
-
-    Complex_FFT(cura_win,FFT_POINT);  // A相电流进行FFT计算
-//    vola_freq = FrequencyCalculation(); // 计算A相电流对应的基波频率
-    cura_freq = vola_freq;  // 采用电压频率代替电流频率进行后续计算
-    Interpolation(cura_freq,cura_rms,cura_phase,0);  // 计算A相电流的幅值及相角
-
-    PhaseCalculation(vola_phase, cura_phase, phasea, calibration_coeff[2]); // A相电压电流夹角计算
-
-
-    /*
-     * B相电压电流的幅值,频率,相角计算
-     */
-
-
-
-
-    /*
-     * C相电压电流的幅值,频率,相角计算
-     */
-
-
-    /* 谐波分析处理完成 */
-    harmonicflag = FALSE;
+    /* 计算A相电压的幅值及相角, 矫正各次谐波的幅值相位 */
+    DoubleLine_Inter(funfreq.Ua,rms.Ua,phase.Ua);
 }
-
-
-
-
-
-
-///* Number of samples for which FFT needs to be calculated */
-//#define N 256
-///* Number of unique sine waves in input data */
-//#define NUM_SIN_WAVES 4
-//
-//
-///* Align the tables that we have to use */
-//#pragma DATA_ALIGN(x_ref, 8);
-//float   x_ref [2*N];
-//
-//
-///*
-//    This function generates the input data and also updates the
-//    input data arrays used by the various FFT kernels
-//*/
-//void generateInput (int numSinWaves)
-//{
-//    int   i, j;
-//    float sinWaveIncFreq, sinWaveMag;
-//
-//    /*
-//        Based on numSinWave information, create the input data. The
-//        input data is first created using floating point dataType. The
-//        floating point data type is then converted to the appropriate
-//        fixed point notation
-//    */
-//
-//    /* Clear the input floating point array */
-//    for (i = 0; i < N; i++) {
-//        x_ref[2*i]   = (float)0.0;
-//        x_ref[2*i+1] = (float)0.0;
-//    }
-//
-//    /* Calculate the incremental freq for each sin wave */
-//    sinWaveIncFreq = ((float)3.142)/(numSinWaves*(float)1.0);
-//
-//    /* Calculate the magnitude for each sin wave */
-//    sinWaveMag = (float)1.0/(numSinWaves * (float)1.0*N);
-//
-//    /* Create the input array as sum of the various sin wave data */
-//    for (j = 0; j < numSinWaves; j++) {
-//        for (i = 0; i < N; i++) {
-//            x_ref[2*i]  += sinWaveMag * (float)cos(sinWaveIncFreq*j*i);
-//            x_ref[2*i+1] = (float) 0.0;
-//        }
-//    }
-//
-//    /* Copy the reference input data to the various input arrays */
-//    for (i = 0; i < N; i++) {
-//        x_sp [2*i]   = x_ref[2*i];
-//        x_sp [2*i+1] = x_ref[2*i+1];
-//    }
-//}

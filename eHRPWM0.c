@@ -27,7 +27,7 @@ void TB_init()
 	eHRPWM0_TBCTL |= 0x0008; // 不使用映像寄存器
 	eHRPWM0_TBCTL &= ~0x0003; // 递增计数模式
 
-	eHRPWM0_TBPRD = 14; // 1125000/15 = 75000Hz
+	eHRPWM0_TBPRD = 14; // 1125000/15 = 75000Hz;  1125000/22=51200HZ
 
 	eHRPWM0_TBCTL &= ~0x0004; // 禁用输入同步信号
 	eHRPWM0_TBCTL |= 0x0030; // 屏蔽EPWMxSYNCO信号（同步输出）

@@ -2,14 +2,14 @@
  * harmonic.h
  *
  *  Created on: 2016年8月29日
- *      Author: poiler
+ *      Author: QW & poiler
  */
 
 #ifndef C6745_ADS8556_HARMONIC_H_
 #define C6745_ADS8556_HARMONIC_H_
 
+#include "Header/vars.h"
 #include "main.h"
-#include "Header/Vars.h"
 
 
 /* 要做FFT分析的数据 */
@@ -48,13 +48,13 @@ float w[2*FFT_SIZE];
 float pCFFT_In[2*FFT_SIZE+4];
 #pragma DATA_ALIGN(pCFFT_Out, 8)    // 存放FFT计算结果
 float pCFFT_Out[2*FFT_SIZE+4];
-#pragma DATA_SECTION (result_real,".DataInSdram") // 存放FFT结果的实部
+#pragma DATA_SECTION (result_real,".DataInSdram")   // 存放FFT结果的实部
 float result_real[FFT_SIZE];
-#pragma DATA_SECTION (result_imag,".DataInSdram") // 存放FFT结果的虚部
+#pragma DATA_SECTION (result_imag,".DataInSdram")   // 存放FFT结果的虚部
 float result_imag[FFT_SIZE];
-#pragma DATA_SECTION (result_ap,".DataInSdram") // 做FFT算出来的幅值
+#pragma DATA_SECTION (result_ap,".DataInSdram")     // 存放FFT算出来的幅值
 float result_ap[FFT_SIZE];
-#pragma DATA_SECTION (result_ph,".DataInSdram") // 做FFT算出来的相角
+#pragma DATA_SECTION (result_ph,".DataInSdram")     // 存放FFT算出来的相角
 float result_ph[FFT_SIZE];
 
 #pragma DATA_ALIGN(pCFFT_InvOut, 8)
@@ -63,7 +63,6 @@ float pCFFT_InvOut[2*FFT_SIZE+4];
 float pCFFT_InOrig[2*FFT_SIZE+4];
 #pragma DATA_ALIGN(pCTemp, 8)
 float pCTemp[2*FFT_SIZE+4];
-
 
 /* 二进制位翻转 */
 #pragma DATA_ALIGN (brev , 8)
@@ -79,27 +78,11 @@ unsigned char brev[64] = {
 };
 
 
+//三相电流电压矫正系数
+ Correct_cor correct ={-710.8638, -644.012, 1.0602, 0, 0.7609, 0};
 
-/* 校准部分，暂时未用（以前谐波电能表中用到了这些校准系数） */
-int calibration_coeff[9]={
-        -5347,   //    Uarms_coeff=0;  //a相电压校正系数 10000
-        -4782,      //         Iarms_coeff = 0;     //a相电流校正系数10000
-        0,//-13,//197,      //           Gama_a   = 0;     //a相角差（弧度） 放大10000倍，以便整数存储
-
-        -5369,      //    Ubrms_coeff =0;      //b相电压校正系数  10000
-        -4802,      //     Ibrms_coeff = 0;        //b相电流校正系数10000
-        0,//-9,//197,       //         Gama_b   = 0;     //b相角差 （弧度）*10000
-
-        -5354,     //         Ucrms_coeff=0;     //c相电压校正系数10000
-        -4751,     //   Icrms_coeff = 0;     //c相电流校正系数10000
-        0//-19//197     //   Gama_c    = 0;        //c相 角差（弧度）*10000       ={0,0,0,0,0,0,0,0,0};/*
-};
-
-float  abd=0.1,abdd=0.1;
+float abd=0.1,abdd=0.1;
 int as=1,bs=1;
 int ds=1,cs=1;
-
-//三相电流电压矫正系数
- Correct_cor Correct ={ -710.8638 ,-644.012 ,1.0602 , 0 , 0.7609 ,  0};
 
 #endif /* C6745_ADS8556_HARMONIC_H_ */

@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <c6x.h>
-#include <math.h>
 
 #include "Header/SYSCFG.h"
 #include "Header/PLL.h"
@@ -39,7 +38,7 @@
 #define DATA1   0
 #define DATA2   1
 
-#define PI  3.141592653589793
+#define PI  3.141592653
 #define EX  1000 // 窗函数放大系数，由于窗函数小数太多，为提高精度进行放大,  在双谱线插值处更改回原来倍数
 
 #define F1  50
@@ -117,4 +116,4 @@ void delay(uint32_t x);
 void FFT_Init(void);
 void Harmonic_Pro(void);
 
-#endif /* MCASP_EDMA3_C6745_ADS8556_MAIN_H_ */
+#endif /* C6745_ADS8556_MAIN_H_ */

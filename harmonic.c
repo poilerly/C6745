@@ -7,6 +7,7 @@
 
 #include "harmonic.h"
 
+
 /*
  * 将一个数开平方并取倒数
  */
@@ -20,6 +21,26 @@ float InvSqrt(float x)      // to compute x^-0.5
     x = x*(1.5f-xhalf*x*x);   // Newton step, repeating increases accuracy
 
     return x;
+}
+
+
+/*
+ * 4阶3项Nuttall窗函数初始化，参数设置见卿柏元论文
+ * EX=1000；为放大倍数
+ */
+void NuttallWin_Init(void)
+{
+    //窗函数初始化用
+    uint16_t i;
+    for(i = 0; i < FFT_SIZE; i++)  // 卿柏元的论文中n=1,2,...,N-1.只有1023个点
+    {
+        nuttallwin[i]=(0.338946 \
+                - 0.481973 * cossp(2*PI*i / FFT_SIZE) \
+                + 0.161054 * cossp(4*PI*i / FFT_SIZE) \
+                - 0.018027 * cossp(6*PI*i / FFT_SIZE) \
+                )*EX;
+        //放大 32768 倍以减少数据损失,在 interpolation() 内缩小32768倍;    1.85218e-4)=Vref * 0.6575/32768  /30  * 300
+    }
 }
 
 
@@ -38,44 +59,24 @@ void Gen_Twiddle_FFT_Sp(float *w, uint16_t n)
         for (i = 0; i < n >> 2; i += j)
         {
             theta1 = 2 * PI * i / n;
-            x_t = cos (theta1);
-            y_t = sin (theta1);     //y_t=sin(2*pi*i/n)
+            x_t = cossp (theta1);
+            y_t = sinsp (theta1);     //y_t=sin(2*pi*i/n)
             w[k] = (float) x_t;
             w[k + 1] = (float) y_t; //生成数组
 
             theta2 = 4 * PI * i / n;
-            x_t = cos (theta2);
-            y_t = sin (theta2);
+            x_t = cossp (theta2);
+            y_t = sinsp (theta2);
             w[k + 2] = (float) x_t;
             w[k + 3] = (float) y_t;
 
             theta3 = 6 * PI * i / n;
-            x_t = cos (theta3);
-            y_t = sin (theta3);
+            x_t = cossp (theta3);
+            y_t = sinsp (theta3);
             w[k + 4] = (float) x_t;
             w[k + 5] = (float) y_t;
             k += 6;
         }
-    }
-}
-
-
-/*
- * 4阶3项Nuttall窗函数初始化，参数设置见卿柏元论文
- * EX=1000；为放大倍数
- */
-void NuttallWin_Init(void)
-{
-    //窗函数初始化用
-    uint16_t i;
-    for(i = 0; i < FFT_SIZE; i++)  // 卿柏元的论文中n=1,2,...,N-1.只有1023个点
-    {
-        nuttallwin[i]=(0.338946 \
-                -0.481973 * cos(2 * PI * i / FFT_SIZE) \
-                +0.161054 * cos(4 * PI * i / FFT_SIZE) \
-                -0.018027 * cos(6 * PI * i / FFT_SIZE) \
-                )*EX;
-        //放大 32768 倍以减少数据损失,在 interpolation() 内缩小32768倍;    1.85218e-4)=Vref * 0.6575/32768  /30  * 300
     }
 }
 
@@ -101,8 +102,8 @@ void FFT_Window(void)
 
     for(i = 0; i < FFT_SIZE; i++)
     {
-        fft_win.Ua[i] = fft.Ua[i] * nuttallwin[i] * 0.0163;
-        fft_win.Ia[i] = fft.Ia[i] * nuttallwin[i] * 0.0004;
+        fft_win.Ua[i] = fft.Ua[i] * nuttallwin[i];
+        fft_win.Ia[i] = fft.Ia[i] * nuttallwin[i];
 
         fft_win.Ub[i] = fft.Ub[i] * nuttallwin[i] * 0.0163;
         fft_win.Ib[i] = fft.Ib[i] * nuttallwin[i] * 0.0004;
@@ -111,6 +112,7 @@ void FFT_Window(void)
         fft_win.Ic[i] = fft.Ic[i] * nuttallwin[i] * 0.0004;
     }
 }
+
 
 /*
  * pInput: 做FFT的数据
@@ -130,7 +132,7 @@ void Complex_FFT(float *pInput)
 
     for (i = 0; i < FFT_SIZE; i++)
     {
-        pCFFT_In[2*i] = pInput[i];    // 实部
+        pCFFT_In[2*i] = pInput[i];  // 实部
         pCFFT_In[2*i+1] = 0;        // 虚部填充为0
     }
 
@@ -141,7 +143,6 @@ void Complex_FFT(float *pInput)
     // FFT 计算
     DSPF_sp_fftSPxSP (FFT_SIZE, pCFFT_In, w, pCFFT_Out, brev, rad, 0, FFT_SIZE);
 
-
     for(i = 0; i < FFT_SIZE; i++)
     {
         result_real[i] = pCFFT_Out[2*i];
@@ -149,17 +150,16 @@ void Complex_FFT(float *pInput)
 
         result_ap[i] = result_real[i]*result_real[i] + result_imag[i]*result_imag[i];
         result_ap[i] = sqrtsp(result_ap[i]);
-        result_ap[i] = result_ap[i]*2/FFT_SIZE;
 
 //        result_ap[i] = InvSqrt(result_ap[i]) * result_ap[i];
     }
-    result_ap[0]=result_ap[0]/2;//直流分量
+    result_ap[0] = result_ap[0]/FFT_SIZE;   //直流分量
 
     // 计算相位
     result_ph[0] = 0;
     for(i = 1; i < FFT_SIZE; i++)
     {
-        result_ph[i] = atan2(result_imag[i],result_real[i]);
+        result_ph[i] = atan2sp(result_imag[i],result_real[i]);
         //得出结果为PI类型，即单位为"rad"；需要转换为角度，单位为"°"；
         //角度=result_ph[i]*180/pi;
     }
@@ -176,7 +176,7 @@ void Complex_FFT(float *pInput)
     // 恢复 FFT 结果
     memcpy(pCFFT_Out,pCTemp,2*FFT_SIZE*sizeof(float));
 
-    printf("\n复数 FFT 测试结果:");
+//    printf("\n复数 FFT 测试结果:");
 
     uint8_t Flag;
     for(i = 0; i < FFT_SIZE; i++)
@@ -242,20 +242,22 @@ float Fundament_Freq()
 /*
  * 双谱线插值算法
  * 参数含义：
- * fn：之前计算的基频频率，result_rms：校正后幅值，result_phase：校正后相角，intflag：含义待定
+ * fn：之前计算的基频频率，result_rms：幅值，result_phase：相角
  */
 void DoubleLine_Inter(float fn,float result_rms[],float result_phase[])
 {
     int n;
-    unsigned long pitch_t, t1, t2,  t;
+    unsigned long pitch_t, t1, t2, t;
     float sub_max, midvalue, midvalue1, temp;
     float maxValue1;
 
-    for(n = 1;n <= Harm_P; n++)    // find the max and sub_max value near every order,计算n次谐波的值每次谐波计算一次
+    for(n = 1;n <= Harm_P; n++)     // find the max and sub_max value near every order,计算n次谐波的值每次谐波计算一次
     {
         maxValue1=0.0;
-        t1 = (n*fn-10)*FFT_SIZE/FS;             //由Fs*t/N=(50+-10);得出谐波频点范围
+        t1 = (n*fn-10)*FFT_SIZE/FS; //由Fs*t/N=(50+-10);得出谐波频点范围
         t2 = (n*fn+10)*FFT_SIZE/FS;
+
+        // 仅做调试使用
         as=t1;bs=t2;
 
         for(t=t1+1;t<=t2;t++)
@@ -296,26 +298,6 @@ void DoubleLine_Inter(float fn,float result_rms[],float result_phase[])
 }
 
 
-void PhaseCalculation(float* vol_phase,float* cur_phase,float* phase ,int coeff)
-{
-    short u;
-    float pherro;
-
-    pherro =((float)coeff)/32768;
-    for(u=0;u<50;u++)
-    {
-        phase[u] = vol_phase[u] - cur_phase[u] + (u+1) * pherro;
-        while((phase[u] > 2*PI) || (phase[u] < 0))
-        {
-            if(phase[u]>2*PI)
-                phase[u] = phase[u]-2*PI;
-            else
-                phase[u] = phase[u]+2*PI;
-        }
-    }
-}
-
-
 /*
  * 谐波分析处理的函数
  */
@@ -323,10 +305,10 @@ void Harmonic_Pro(void)
 {
     uint16_t i;
     for(i = 0; i < FFT_SIZE; i++)  //直流偏置校
-        fft.Ua[i] = (fft.Ua[i]) + Correct.DCbias_Ua;
+        fft.Ua[i] = (fft.Ua[i]) + correct.DCbias_Ua;
 
     for(i = 0; i < FFT_SIZE; i++)  //比差校准,并换算成电压实际值220V来算
-        fft.Ua[i] = 323.5294 * (fft.Ua[i] * Correct.ratio_Uaf)/32767;
+        fft.Ua[i] = 323.5294 * (fft.Ua[i] * correct.ratio_Uaf)/32767;
 
     /* 对A、B、C 三相电压电流信号进行加窗处理 */
     FFT_Window();
@@ -338,8 +320,8 @@ void Harmonic_Pro(void)
     funfreq.Ua = Fundament_Freq();
 
     /* 校准A相电压的基波频率 */
-    funfreq.Ua = funfreq.Ua * 1.008488888665938 - 0.433567223783763;
+//    funfreq.Ua = funfreq.Ua * 1.008488888665938 - 0.433567223783763;
 
-    /* 计算A相电压的幅值及相角, 矫正各次谐波的幅值相位 */
+    /* 计算A相电压各次谐波的幅值及相角 */
     DoubleLine_Inter(funfreq.Ua,rms.Ua,phase.Ua);
 }

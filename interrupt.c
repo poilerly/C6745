@@ -11,7 +11,7 @@ extern uint8_t harmonicflag;
 extern int16_t sampledata[];
 extern FFTData fft;
 
-/* 采样的原始数据 */
+/* 采样的原始数据 6个通道,每个一个周波1500点,*/
 #pragma DATA_SECTION (origin,".DataInSdram")
 OriginData origin;
 uint16_t fftpoint = 0;
@@ -28,7 +28,7 @@ void INTC_Init(void)
 	ICR = 0xFFF0;
 
 	// Enable NMI, INT4 interrupts
-	IER = (1 << 1) | (1 << 4);  // 使能中断EDMA3_CC0_INT1
+	IER = (1 << 1) | (1 << 4);
 }
 
 
@@ -52,22 +52,24 @@ interrupt void EDMA3_CC0_INT1_isr(void)
 
         if(regIPR & (1 << 18))
         {
-            /*
-             * 把ADS8556采样一个周波的6个通道的数据分别分对应到各相电压电流
-             */
-            origin.Ua[i] = sampledata[i*6];
-            origin.Ia[i] = sampledata[i*6+1];
-            origin.Ub[i] = sampledata[i*6+2];
-            origin.Ib[i] = sampledata[i*6+3];
-            origin.Uc[i] = sampledata[i*6+4];
-            origin.Ic[i] = sampledata[i*6+5];
 
+            /* 把ADS8556采样一个周波的6个通道的数据分别分对应到各相电压电流 */
+            for(i = 0; i < SAMPLE_SIZE; i++)
+            {
+                origin.Ua[i] = sampledata[i*6];
+                origin.Ia[i] = sampledata[i*6+1];
+                origin.Ub[i] = sampledata[i*6+2];
+                origin.Ib[i] = sampledata[i*6+3];
+                origin.Uc[i] = sampledata[i*6+4];
+                origin.Ic[i] = sampledata[i*6+5];
+            }
+
+            /*
+             * 对电压和电流离散数组进行10分频,提取出1024点用于FFT计算,
+             * 故采样率为75000/10=7500.
+             */
             if(FALSE == harmonicflag)
             {
-                /*
-                 * 对电压和电流离散数组进行10分频,提取出1024点用于FFT计算,
-                 * 故采样率为75000/10=7500.
-                 */
                 for(i = 0; i < (SAMPLE_SIZE / 10); i++)
                 {
                     temp = i * 10;
@@ -88,7 +90,7 @@ interrupt void EDMA3_CC0_INT1_isr(void)
             }
 
             // Clear the corresponding bit in the Interrupt Pending Interrupt
-            EDMA3_ICR = (1 << 18);  //必须向ICR相应位写入1,来手动清零IPR中相应位
+            EDMA3_ICR = (1 << 18);
         }
     }
 }

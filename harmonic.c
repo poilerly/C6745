@@ -127,6 +127,12 @@ void FFT_Window(void)
 void Complex_FFT(float *pInput)
 {
     uint16_t i,rad;
+    int start, stop, overhead;
+
+    start = clock();
+    stop = clock();
+
+    overhead = stop - start;
 
     rad = 4;    // 确定快速傅里叶变换基
 
@@ -140,8 +146,13 @@ void Complex_FFT(float *pInput)
     memcpy(pCFFT_InOrig,pCFFT_In,2*FFT_SIZE*sizeof(float));
     //=============================================================
 
+    start = clock();
+
     // FFT 计算
     DSPF_sp_fftSPxSP (FFT_SIZE, pCFFT_In, w, pCFFT_Out, brev, rad, 0, FFT_SIZE);
+
+    stop = clock();
+    printf("Clocks for %d Complex FFT = %d\n", FFT_SIZE, (stop-start)-overhead);
 
     for(i = 0; i < FFT_SIZE; i++)
     {

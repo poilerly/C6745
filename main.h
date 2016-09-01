@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <c6x.h>
+#include <time.h>
 
 #include "Header/SYSCFG.h"
 #include "Header/PLL.h"
